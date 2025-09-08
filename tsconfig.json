@@ -2,5 +2,12 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./apps/backend/api-nest-service-e2e"
+    },
+    {
+      "path": "./apps/backend/api-nest-service"
+    }
+  ]
 }
