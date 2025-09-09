@@ -28,7 +28,7 @@ The monorepo is organized into the following top-level directories:
     -   `frontend/`: For frontend applications.
 -   `packages/`: Contains shared libraries and modules.
 -   `infrastructure/`: Contains infrastructure as code (e.g., Kubernetes, Terraform).
--   `docs/`: Contains project documentation.
+-   `docs/`: Contains project documentation. See docs/README.md for an overview.
 
 ## Development Commands
 
