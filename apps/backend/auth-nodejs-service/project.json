@@ -1,0 +1,47 @@
+{
+  "name": "auth-nodejs-service",
+  "root": "apps/backend/auth-nodejs-service",
+  "sourceRoot": "apps/backend/auth-nodejs-service/src",
+  "projectType": "application",
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/backend/auth-nodejs-service",
+        "command": "node --enable-source-maps ./dist/main.js",
+        "color": true
+      },
+      "dependsOn": ["build"]
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/backend/auth-nodejs-service",
+        "command": "node ../../..//node_modules/typescript/bin/tsc -p tsconfig.app.json"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/backend/auth-nodejs-service",
+        "command": "npx nodemon --watch src --exec \"node --loader ts-node/esm src/main.ts\""
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/backend/auth-nodejs-service"],
+      "options": {
+        "jestConfig": "apps/backend/auth-nodejs-service/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/backend/auth-nodejs-service",
+        "command": "rimraf dist out-tsc"
+      }
+    }
+  },
+  "tags": ["type:service", "runtime:node", "framework:fastify"]
+}

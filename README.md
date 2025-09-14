@@ -32,7 +32,7 @@ The monorepo is organized into the following top-level directories:
 
 ## Development Commands
 
-### Available Projects: `api-nest-service`, `api-java-service`
+### Available Projects: `api-nest-service`, `api-java-service`, `auth-nodejs-service`
 ### Global Commands
 - Generate: `nx generate @nx/nest:app --name=<app-name> --directory="apps/<frontend-or-backend>/<directory>"`
 - Build: `npx nx build <app-name>`
