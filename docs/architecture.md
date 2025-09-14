@@ -8,7 +8,7 @@ This starter is an Nx monorepo intended for microservices on AWS (cloud-agnostic
 - Initial runtime: Docker Compose (local/dev), then migrate to Kubernetes
 - CI: GitHub Actions (primary) with a Jenkins example
 - Observability: Kibana (ELK) for logs, Prometheus + Grafana for metrics/alerts, OpenTelemetry for tracing (planned)
-- Auth: Multiple auth services possible (JWT-based, Keycloak-based, etc.)
+- Auth: Multiple auth services possible (AWS Cognito, JWT-based, Keycloak-based, etc.)
 
 ## Repository Layout
 - apps/
