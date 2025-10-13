@@ -1,13 +1,0 @@
-> jest --passWithNoTests=true
-
-(node:1801894) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-[999D[K[999D[K[31mError: Jest: Failed to parse the TypeScript config file /home/mack/my_workspace/microservices-starter/apps/backend/api-nest-service/jest.config.ts[39m
-[31m  ReferenceError: __dirname is not defined in ES module scope[39m
-[31m    at readConfigFileAndSetRootDir (/home/mack/my_workspace/microservices-starter/node_modules/jest-config/build/index.js:2269:13)[39m
-[31m    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
-[31m    at async readInitialOptions (/home/mack/my_workspace/microservices-starter/node_modules/jest-config/build/index.js:1147:13)[39m
-[31m    at async readConfig (/home/mack/my_workspace/microservices-starter/node_modules/jest-config/build/index.js:918:7)[39m
-[31m    at async readConfigs (/home/mack/my_workspace/microservices-starter/node_modules/jest-config/build/index.js:1168:26)[39m
-[31m    at async runCLI (/home/mack/my_workspace/microservices-starter/node_modules/@jest/core/build/index.js:1397:7)[39m
-[31m    at async Object.run (/home/mack/my_workspace/microservices-starter/node_modules/jest-cli/build/index.js:656:9)[39m
