@@ -1,0 +1,21 @@
+> ./gradlew bootRun
+
+
+[Incubating] Problems report is available at: file:///home/mack/my_workspace/microservices-starter/apps/backend/api-java-service/build/reports/problems/problems-report.html
+
+[31mFAILURE: [39m[31mBuild failed with an exception.[39m
+
+* What went wrong:
+Task 'bootRun' not found in root project 'api-java-service'.
+
+* Try:
+[33m> [39mRun [1mgradlew tasks[m to get a list of available tasks.
+[33m> [39mFor more on name expansion, please refer to https://docs.gradle.org/8.14/userguide/command_line_interface.html#sec:name_abbreviation in the Gradle documentation.
+[33m> [39mRun with [1m--stacktrace[m option to get the stack trace.
+[33m> [39mRun with [1m--info[m or [1m--debug[m option to get more log output.
+[33m> [39mRun with [1m--scan[m to get full insights.
+[33m> [39mGet more help at [1mhttps://help.gradle.org[m.
+
+[31;1mBUILD FAILED[0;39m in 504ms
+
+[1A[1m<[0;1m-------------> 0% WAITING[m[26D[1B[1A[2K[0m[?12l[?25h

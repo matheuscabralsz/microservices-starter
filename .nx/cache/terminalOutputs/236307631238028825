@@ -1,0 +1,7 @@
+> ./gradlew test
+
+
+[32;1mBUILD SUCCESSFUL[0;39m in 500ms
+1 actionable task: 1 up-to-date
+
+[1A[1m<[0;32;1m=============[0;39;1m> 100% EXECUTING [46ms][m[37D[1B[1A[1m<[0;1m-------------> 0% WAITING[m[0K[26D[1B[1A[2K[0m[?12l[?25h
