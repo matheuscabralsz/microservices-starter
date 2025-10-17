@@ -1,0 +1,35 @@
+{
+  "name": "microservices-starter",
+  "version": "1.0.0",
+  "license": "MIT",
+  "description": "PolyStack - A comprehensive polyglot microservices platform built on Nx monorepo",
+  "scripts": {
+    "start": "nx serve",
+    "build": "nx build",
+    "test": "nx test",
+    "lint": "nx workspace-lint && nx lint",
+    "e2e": "nx e2e",
+    "affected:apps": "nx affected:apps",
+    "affected:libs": "nx affected:libs",
+    "affected:build": "nx affected:build",
+    "affected:test": "nx affected:test",
+    "affected:lint": "nx affected:lint",
+    "affected:e2e": "nx affected:e2e",
+    "affected": "nx affected",
+    "format:write": "nx format:write",
+    "format:check": "nx format:check",
+    "update": "nx migrate latest",
+    "workspace-generator": "nx workspace-generator",
+    "dep-graph": "nx dep-graph",
+    "help": "nx help"
+  },
+  "private": true,
+  "devDependencies": {
+    "@nx/workspace": "^21.6.5",
+    "nx": "^21.6.5"
+  },
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ]
+}
