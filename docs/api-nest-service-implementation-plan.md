@@ -1,10 +1,10 @@
 # API-NestJS-Service Implementation Plan
-## TODO CRUD Microservice
+## Simple TODO CRUD Microservice
 
 **Service Name**: `api-nest-service`
 **Framework**: NestJS (TypeScript)
 **Port**: 3100
-**Purpose**: Production-ready TODO CRUD microservice demonstrating NestJS patterns
+**Purpose**: Learning-focused TODO CRUD microservice demonstrating NestJS patterns
 
 ---
 
@@ -21,29 +21,26 @@
 9. [Testing Strategy](#testing-strategy)
 10. [Quality Gates](#quality-gates)
 11. [Deployment](#deployment)
-12. [References](#references)
 
 ---
 
 ## Overview
 
-The `api-nest-service` is the first backend microservice in the PolyStack platform, implementing a complete TODO CRUD application. This service serves as a reference implementation for all future NestJS services in the monorepo.
+The `api-nest-service` is a **simple TODO CRUD microservice** built to demonstrate NestJS best practices. This is a learning-focused implementation without authentication complexity.
 
 ### Goals
-- Demonstrate production-ready NestJS architecture
+- Demonstrate clean NestJS architecture
 - Implement all CRUD operations with proper validation
-- Achieve 80%+ test coverage
+- **100% passing tests** with 80%+ code coverage
 - Follow all PolyStack coding conventions
 - Provide OpenAPI documentation
-- Implement JWT authentication
 - Use structured JSON logging
 - Deploy via Docker container
 
 ### Success Criteria
 ✅ All CRUD endpoints functional
-✅ JWT authentication enforced on protected routes
 ✅ Input validation working on all endpoints
-✅ 80%+ code coverage with passing tests
+✅ **100% passing tests** with 80%+ code coverage
 ✅ Swagger documentation accessible at `/api/docs`
 ✅ Health check endpoint responding
 ✅ Structured JSON logs output
@@ -62,7 +59,6 @@ The `api-nest-service` is the first backend microservice in the PolyStack platfo
 | **Runtime** | Node.js | 18+ |
 | **Database** | PostgreSQL | 15+ |
 | **ORM** | TypeORM | Latest |
-| **Authentication** | JWT (passport-jwt) | RS256 |
 | **Validation** | class-validator | Latest |
 | **Documentation** | Swagger/OpenAPI | 3.0 |
 | **Logging** | Winston | Latest |
@@ -79,15 +75,12 @@ The `api-nest-service` is the first backend microservice in the PolyStack platfo
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/typeorm": "^10.0.0",
     "@nestjs/swagger": "^7.0.0",
-    "@nestjs/passport": "^10.0.0",
-    "@nestjs/jwt": "^10.0.0",
     "typeorm": "^0.3.0",
     "pg": "^8.11.0",
-    "passport": "^0.6.0",
-    "passport-jwt": "^4.0.0",
     "class-validator": "^0.14.0",
     "class-transformer": "^0.5.0",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "nest-winston": "^1.9.0"
   },
   "devDependencies": {
     "@nestjs/testing": "^10.0.0",
@@ -113,14 +106,12 @@ CREATE TABLE todos (
   status VARCHAR(50) DEFAULT 'pending',
   priority VARCHAR(20) DEFAULT 'medium',
   due_date TIMESTAMP NULL,
-  user_id UUID NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   deleted_at TIMESTAMP NULL
 );
 
 -- Indexes for performance
-CREATE INDEX idx_todos_user_id ON todos(user_id);
 CREATE INDEX idx_todos_status ON todos(status);
 CREATE INDEX idx_todos_priority ON todos(priority);
 CREATE INDEX idx_todos_deleted_at ON todos(deleted_at);
@@ -137,7 +128,6 @@ CREATE INDEX idx_todos_created_at ON todos(created_at DESC);
 | `status` | VARCHAR(50) | No | 'pending' | Current status (pending, in_progress, completed) |
 | `priority` | VARCHAR(20) | No | 'medium' | Priority level (low, medium, high) |
 | `due_date` | TIMESTAMP | Yes | NULL | Due date/time |
-| `user_id` | UUID | No | - | Owner of the todo |
 | `created_at` | TIMESTAMP | No | CURRENT_TIMESTAMP | Creation timestamp |
 | `updated_at` | TIMESTAMP | No | CURRENT_TIMESTAMP | Last update timestamp |
 | `deleted_at` | TIMESTAMP | Yes | NULL | Soft delete timestamp |
@@ -165,16 +155,16 @@ http://localhost:3100/api/v1
 
 ### Endpoint Specifications
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/health` | No | Health check endpoint |
-| GET | `/api/docs` | No | Swagger documentation |
-| GET | `/api/v1/todos` | Yes | List all todos (paginated, filtered) |
-| GET | `/api/v1/todos/:id` | Yes | Get single todo by ID |
-| POST | `/api/v1/todos` | Yes | Create new todo |
-| PUT | `/api/v1/todos/:id` | Yes | Update todo (full replace) |
-| PATCH | `/api/v1/todos/:id` | Yes | Update todo (partial) |
-| DELETE | `/api/v1/todos/:id` | Yes | Delete todo (soft delete) |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check endpoint |
+| GET | `/api/docs` | Swagger documentation |
+| GET | `/api/v1/todos` | List all todos (paginated, filtered) |
+| GET | `/api/v1/todos/:id` | Get single todo by ID |
+| POST | `/api/v1/todos` | Create new todo |
+| PUT | `/api/v1/todos/:id` | Update todo (full replace) |
+| PATCH | `/api/v1/todos/:id` | Update todo (partial) |
+| DELETE | `/api/v1/todos/:id` | Delete todo (soft delete) |
 
 ### Query Parameters
 
@@ -220,7 +210,6 @@ GET /api/v1/todos?page=1&limit=20&status=pending&priority=high&sortBy=due_date&s
     "status": "pending",
     "priority": "high",
     "dueDate": "2025-10-20T17:00:00Z",
-    "userId": "123e4567-e89b-12d3-a456-426614174000",
     "createdAt": "2025-10-17T10:30:00Z",
     "updatedAt": "2025-10-17T10:30:00Z"
   }
@@ -241,7 +230,6 @@ GET /api/v1/todos?page=1&limit=20&status=pending&priority=high&sortBy=due_date&s
       "status": "pending",
       "priority": "high",
       "dueDate": "2025-10-20T17:00:00Z",
-      "userId": "123e4567-e89b-12d3-a456-426614174000",
       "createdAt": "2025-10-17T10:30:00Z",
       "updatedAt": "2025-10-17T10:30:00Z"
     }
@@ -276,7 +264,6 @@ GET /api/v1/todos?page=1&limit=20&status=pending&priority=high&sortBy=due_date&s
     "status": "in_progress",
     "priority": "high",
     "dueDate": "2025-10-20T17:00:00Z",
-    "userId": "123e4567-e89b-12d3-a456-426614174000",
     "createdAt": "2025-10-17T10:30:00Z",
     "updatedAt": "2025-10-17T11:15:00Z"
   }
@@ -315,11 +302,8 @@ GET /api/v1/todos?page=1&limit=20&status=pending&priority=high&sortBy=due_date&s
 | 200 | OK | Successful GET, PUT, PATCH |
 | 201 | Created | Successful POST |
 | 204 | No Content | Successful DELETE |
-| 400 | Bad Request | Invalid request format |
-| 401 | Unauthorized | Missing or invalid JWT token |
-| 403 | Forbidden | Valid token but insufficient permissions |
+| 400 | Bad Request | Invalid request format or validation errors |
 | 404 | Not Found | Resource not found |
-| 422 | Unprocessable Entity | Validation errors |
 | 500 | Internal Server Error | Server-side error |
 
 ---
@@ -331,7 +315,6 @@ apps/services/api-nest-service/
 ├── src/
 │   ├── config/                           # Configuration modules
 │   │   ├── database.config.ts            # TypeORM configuration
-│   │   ├── jwt.config.ts                 # JWT configuration
 │   │   └── logger.config.ts              # Winston logger config
 │   │
 │   ├── modules/
@@ -346,15 +329,6 @@ apps/services/api-nest-service/
 │   │   │   ├── todos.service.ts          # Business logic
 │   │   │   ├── todos.repository.ts       # Data access layer
 │   │   │   └── todos.module.ts           # Module definition
-│   │   │
-│   │   ├── auth/                         # Authentication module
-│   │   │   ├── guards/
-│   │   │   │   └── jwt-auth.guard.ts     # JWT guard
-│   │   │   ├── strategies/
-│   │   │   │   └── jwt.strategy.ts       # Passport JWT strategy
-│   │   │   ├── decorators/
-│   │   │   │   └── current-user.decorator.ts  # User decorator
-│   │   │   └── auth.module.ts
 │   │   │
 │   │   └── health/                       # Health check module
 │   │       ├── health.controller.ts
@@ -415,7 +389,7 @@ apps/services/api-nest-service/
 
 #### Task 1: Set up NestJS project structure and dependencies
 - Initialize NestJS application using Nx generator
-- Install required dependencies (TypeORM, PostgreSQL, JWT, Winston, Swagger)
+- Install required dependencies (TypeORM, PostgreSQL, Winston, Swagger)
 - Configure TypeScript strict mode
 - Set up basic project structure
 
@@ -427,12 +401,11 @@ nx generate @nx/nest:application api-nest-service
 # Install dependencies
 npm install --save @nestjs/typeorm typeorm pg
 npm install --save @nestjs/swagger swagger-ui-express
-npm install --save @nestjs/passport @nestjs/jwt passport passport-jwt
 npm install --save class-validator class-transformer
 npm install --save winston nest-winston
 
 # Install dev dependencies
-npm install --save-dev @types/passport-jwt @types/supertest
+npm install --save-dev @types/supertest
 ```
 
 **Deliverables:**
@@ -482,7 +455,6 @@ export default {
 - Define Todo entity with TypeORM decorators
 - Include all standard columns (id, created_at, updated_at, deleted_at)
 - Set up indexes for performance
-- Define relationships if needed
 
 **File to Create:**
 - `src/modules/todos/entities/todo.entity.ts`
@@ -518,10 +490,6 @@ export class Todo {
 
   @Column({ type: 'timestamp', nullable: true })
   dueDate: Date;
-
-  @Column({ type: 'uuid' })
-  @Index()
-  userId: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -567,7 +535,7 @@ npm run typeorm migration:revert
 ---
 
 ### Phase 2: Core Features (Tasks 5-8)
-**Estimated Time**: 3-4 hours
+**Estimated Time**: 2-3 hours
 
 #### Task 5: Create DTOs for Todo validation
 - Create DTOs for create, update, and query operations
@@ -578,35 +546,6 @@ npm run typeorm migration:revert
 - `src/modules/todos/dto/create-todo.dto.ts`
 - `src/modules/todos/dto/update-todo.dto.ts`
 - `src/modules/todos/dto/query-todo.dto.ts`
-
-**Example DTO:**
-```typescript
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsDateString, MaxLength } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-export class CreateTodoDto {
-  @ApiProperty({ example: 'Complete project documentation', maxLength: 255 })
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  title: string;
-
-  @ApiPropertyOptional({ example: 'Write README and API docs' })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({ enum: ['low', 'medium', 'high'], default: 'medium' })
-  @IsEnum(['low', 'medium', 'high'])
-  @IsOptional()
-  priority?: string;
-
-  @ApiPropertyOptional({ example: '2025-10-20T17:00:00Z' })
-  @IsDateString()
-  @IsOptional()
-  dueDate?: string;
-}
-```
 
 **Deliverables:**
 - ✅ CreateTodoDto with validation
@@ -658,19 +597,13 @@ export class TodosService {
     private readonly logger: Logger,
   ) {}
 
-  async findAll(userId: string, query: QueryTodoDto): Promise<PaginatedResponse<Todo>>
-  async findOne(id: string, userId: string): Promise<Todo>
-  async create(userId: string, createTodoDto: CreateTodoDto): Promise<Todo>
-  async update(id: string, userId: string, updateTodoDto: UpdateTodoDto): Promise<Todo>
-  async remove(id: string, userId: string): Promise<void>
+  async findAll(query: QueryTodoDto): Promise<PaginatedResponse<Todo>>
+  async findOne(id: string): Promise<Todo>
+  async create(createTodoDto: CreateTodoDto): Promise<Todo>
+  async update(id: string, updateTodoDto: UpdateTodoDto): Promise<Todo>
+  async remove(id: string): Promise<void>
 }
 ```
-
-**Business Rules:**
-- Users can only access their own todos
-- Title is required and must be unique per user
-- Status transitions must be valid
-- Due date cannot be in the past (optional validation)
 
 **Deliverables:**
 - ✅ TodoService created with all methods
@@ -683,7 +616,6 @@ export class TodosService {
 #### Task 8: Create TodoController with REST endpoints
 - Create controller with all REST endpoints
 - Add route decorators
-- Add authentication guards
 - Add Swagger documentation decorators
 
 **File to Create:**
@@ -693,75 +625,42 @@ export class TodosService {
 ```typescript
 @Controller('api/v1/todos')
 @ApiTags('todos')
-@UseGuards(JwtAuthGuard)
 export class TodosController {
   constructor(private readonly todosService: TodosService) {}
 
   @Get()
   @ApiOperation({ summary: 'List all todos' })
-  async findAll(@CurrentUser() user, @Query() query: QueryTodoDto)
+  async findAll(@Query() query: QueryTodoDto)
 
   @Get(':id')
   @ApiOperation({ summary: 'Get todo by ID' })
-  async findOne(@Param('id') id: string, @CurrentUser() user)
+  async findOne(@Param('id') id: string)
 
   @Post()
   @ApiOperation({ summary: 'Create new todo' })
-  async create(@Body() createTodoDto: CreateTodoDto, @CurrentUser() user)
+  async create(@Body() createTodoDto: CreateTodoDto)
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update todo' })
-  async update(@Param('id') id: string, @Body() updateTodoDto: UpdateTodoDto, @CurrentUser() user)
+  async update(@Param('id') id: string, @Body() updateTodoDto: UpdateTodoDto)
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete todo' })
-  async remove(@Param('id') id: string, @CurrentUser() user)
+  async remove(@Param('id') id: string)
 }
 ```
 
 **Deliverables:**
 - ✅ TodoController created
 - ✅ All endpoints implemented
-- ✅ Guards applied
 - ✅ Swagger documentation added
 
 ---
 
-### Phase 3: Cross-Cutting Concerns (Tasks 9-13)
-**Estimated Time**: 3-4 hours
+### Phase 3: Cross-Cutting Concerns (Tasks 9-12)
+**Estimated Time**: 2-3 hours
 
-#### Task 9: Implement JWT authentication middleware
-- Set up Passport JWT strategy
-- Create JWT auth guard
-- Create current user decorator
-- Configure JWT module
-
-**Files to Create:**
-- `src/modules/auth/strategies/jwt.strategy.ts`
-- `src/modules/auth/guards/jwt-auth.guard.ts`
-- `src/modules/auth/decorators/current-user.decorator.ts`
-- `src/modules/auth/auth.module.ts`
-
-**JWT Configuration:**
-```typescript
-JwtModule.register({
-  secret: process.env.JWT_SECRET,
-  signOptions: {
-    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
-    algorithm: 'RS256',
-  },
-})
-```
-
-**Deliverables:**
-- ✅ JWT strategy implemented
-- ✅ Auth guard working
-- ✅ Current user decorator functional
-- ✅ Protected routes require valid JWT
-
----
-
-#### Task 10: Add global validation pipe and error handling
+#### Task 9: Add global validation pipe and error handling
 - Create global validation pipe
 - Create exception filters
 - Create response interceptors
@@ -795,7 +694,7 @@ JwtModule.register({
 
 ---
 
-#### Task 11: Implement health check endpoint
+#### Task 10: Implement health check endpoint
 - Create health check module
 - Check database connectivity
 - Check dependencies status
@@ -830,7 +729,7 @@ JwtModule.register({
 
 ---
 
-#### Task 12: Configure Swagger/OpenAPI documentation
+#### Task 11: Configure Swagger/OpenAPI documentation
 - Install Swagger module
 - Configure Swagger in main.ts
 - Add API tags and descriptions
@@ -842,7 +741,6 @@ const config = new DocumentBuilder()
   .setTitle('PolyStack API - NestJS Service')
   .setDescription('TODO CRUD API documentation')
   .setVersion('1.0')
-  .addBearerAuth()
   .addTag('todos', 'Todo CRUD operations')
   .addTag('health', 'Health check endpoints')
   .build();
@@ -859,7 +757,7 @@ SwaggerModule.setup('api/docs', app, document);
 
 ---
 
-#### Task 13: Add structured JSON logging with Winston
+#### Task 12: Add structured JSON logging with Winston
 - Configure Winston logger
 - Create custom logger service
 - Add logging interceptor
@@ -874,10 +772,8 @@ SwaggerModule.setup('api/docs', app, document);
   "timestamp": "2025-10-17T11:35:00Z",
   "level": "info",
   "service": "api-nest-service",
-  "traceId": "abc123",
   "message": "Todo created successfully",
   "context": {
-    "userId": "user-123",
     "todoId": "todo-456",
     "method": "POST",
     "path": "/api/v1/todos",
@@ -895,10 +791,10 @@ SwaggerModule.setup('api/docs', app, document);
 
 ---
 
-### Phase 4: Testing (Tasks 14-17)
+### Phase 4: Testing (Tasks 13-16)
 **Estimated Time**: 4-5 hours
 
-#### Task 14: Write unit tests for TodoService (80%+ coverage)
+#### Task 13: Write unit tests for TodoService
 - Test all service methods
 - Mock repository layer
 - Test business logic
@@ -913,17 +809,17 @@ SwaggerModule.setup('api/docs', app, document);
 - ✅ Find all todos with pagination
 - ✅ Find todo by ID (success)
 - ✅ Find todo by ID (not found)
-- ✅ Find todo by ID (unauthorized - different user)
 - ✅ Update todo (success)
 - ✅ Update todo (not found)
 - ✅ Delete todo (success)
 - ✅ Delete todo (not found)
 
 **Coverage Target**: 80%+ for TodoService
+**Test Pass Requirement**: **100% passing**
 
 ---
 
-#### Task 15: Write unit tests for TodoController
+#### Task 14: Write unit tests for TodoController
 - Test all controller methods
 - Mock service layer
 - Test request validation
@@ -939,13 +835,13 @@ SwaggerModule.setup('api/docs', app, document);
 - ✅ PATCH /todos/:id updates todo
 - ✅ DELETE /todos/:id deletes todo
 - ✅ Validation errors return 400
-- ✅ Auth guard prevents unauthorized access
 
 **Coverage Target**: 80%+ for TodoController
+**Test Pass Requirement**: **100% passing**
 
 ---
 
-#### Task 16: Write integration tests for database operations
+#### Task 15: Write integration tests for database operations
 - Test with real database (test container or test DB)
 - Test CRUD operations end-to-end
 - Test transactions
@@ -964,12 +860,13 @@ SwaggerModule.setup('api/docs', app, document);
 - ✅ Filtering by priority works
 - ✅ Search functionality works
 
+**Test Pass Requirement**: **100% passing**
+
 ---
 
-#### Task 17: Write E2E tests for all API endpoints
+#### Task 16: Write E2E tests for all API endpoints
 - Test full HTTP request/response cycle
 - Use Supertest for HTTP requests
-- Test authentication flow
 - Test error scenarios
 
 **File to Create:**
@@ -982,18 +879,17 @@ SwaggerModule.setup('api/docs', app, document);
 - ✅ GET /api/v1/todos/:id returns 404 for non-existent
 - ✅ PATCH /api/v1/todos/:id updates todo (200)
 - ✅ DELETE /api/v1/todos/:id deletes todo (204)
-- ✅ Requests without JWT token return 401
 - ✅ Invalid request data returns 400
 - ✅ Validation errors return proper format
 
-**Coverage Target**: All critical user flows tested
+**Test Pass Requirement**: **100% passing**
 
 ---
 
-### Phase 5: DevOps (Tasks 18-20)
+### Phase 5: DevOps (Tasks 17-19)
 **Estimated Time**: 2-3 hours
 
-#### Task 18: Create Dockerfile with multi-stage build
+#### Task 17: Create Dockerfile with multi-stage build
 - Create optimized Dockerfile
 - Use multi-stage build
 - Include health check
@@ -1001,44 +897,6 @@ SwaggerModule.setup('api/docs', app, document);
 
 **File to Create:**
 - `Dockerfile`
-
-**Dockerfile Template:**
-```dockerfile
-# Stage 1: Builder
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-
-# Stage 2: Production
-FROM node:18-alpine
-WORKDIR /app
-
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
-
-# Copy built files
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001
-USER nestjs
-
-EXPOSE 3100
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3100/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
-
-# Use dumb-init to handle signals properly
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/main.js"]
-```
 
 **Deliverables:**
 - ✅ Dockerfile created
@@ -1049,7 +907,7 @@ CMD ["node", "dist/main.js"]
 
 ---
 
-#### Task 19: Add .env.example file with all required variables
+#### Task 18: Add .env.example file with all required variables
 - Document all environment variables
 - Provide example values
 - Add descriptions
@@ -1058,54 +916,6 @@ CMD ["node", "dist/main.js"]
 **File to Create:**
 - `.env.example`
 
-**Content:**
-```bash
-# ======================
-# Service Configuration
-# ======================
-NODE_ENV=development
-PORT=3100
-HOST=0.0.0.0
-API_VERSION=v1
-API_PREFIX=api
-LOG_LEVEL=debug
-
-# ======================
-# Database Configuration
-# ======================
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=postgres
-DATABASE_PASSWORD=postgres
-DATABASE_NAME=polystack_dev
-DATABASE_SSL=false
-
-# ======================
-# JWT Authentication
-# ======================
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-JWT_EXPIRES_IN=15m
-REFRESH_TOKEN_EXPIRES_IN=7d
-
-# ======================
-# CORS Configuration
-# ======================
-CORS_ORIGIN=http://localhost:3000
-CORS_CREDENTIALS=true
-
-# ======================
-# Rate Limiting
-# ======================
-RATE_LIMIT_TTL=60
-RATE_LIMIT_MAX=100
-
-# ======================
-# Observability
-# ======================
-SENTRY_DSN=
-JAEGER_ENDPOINT=http://localhost:14268/api/traces
-```
-
 **Deliverables:**
 - ✅ .env.example created
 - ✅ All variables documented
@@ -1113,7 +923,7 @@ JAEGER_ENDPOINT=http://localhost:14268/api/traces
 
 ---
 
-#### Task 20: Create service README with setup and usage instructions
+#### Task 19: Create service README with setup and usage instructions
 - Document service purpose
 - Provide setup instructions
 - List API endpoints
@@ -1142,10 +952,10 @@ JAEGER_ENDPOINT=http://localhost:14268/api/traces
 
 ---
 
-### Phase 6: Quality Assurance (Task 21)
+### Phase 6: Quality Assurance (Task 20)
 **Estimated Time**: 1-2 hours
 
-#### Task 21: Run all quality gates (tests, build, lint, coverage)
+#### Task 20: Run all quality gates (tests, build, lint, coverage)
 - Run all tests
 - Check code coverage
 - Run linting
@@ -1178,9 +988,9 @@ curl http://localhost:3100/health
 ```
 
 **Quality Gate Checklist:**
-- ✅ All unit tests pass
-- ✅ All integration tests pass
-- ✅ All E2E tests pass
+- ✅ **All unit tests pass (100%)**
+- ✅ **All integration tests pass (100%)**
+- ✅ **All E2E tests pass (100%)**
 - ✅ Code coverage ≥ 80%
 - ✅ No linting errors
 - ✅ Production build succeeds
@@ -1189,7 +999,6 @@ curl http://localhost:3100/health
 - ✅ Health check responds with 200
 - ✅ Swagger docs accessible
 - ✅ All endpoints functional
-- ✅ JWT authentication working
 - ✅ Validation working
 - ✅ Error handling working
 - ✅ Logs are JSON formatted
@@ -1243,10 +1052,6 @@ export class Todo {
 
   @Column({ type: 'timestamp', nullable: true })
   dueDate: Date;
-
-  @Column({ type: 'uuid' })
-  @Index()
-  userId: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -1317,88 +1122,12 @@ export class CreateTodoDto {
 
 ---
 
-### 3. Update Todo DTO
-
-**File**: `src/modules/todos/dto/update-todo.dto.ts`
-
-```typescript
-import { PartialType } from '@nestjs/swagger';
-import { IsEnum, IsOptional } from 'class-validator';
-import { CreateTodoDto } from './create-todo.dto';
-
-export class UpdateTodoDto extends PartialType(CreateTodoDto) {
-  @ApiPropertyOptional({
-    description: 'Current status',
-    enum: ['pending', 'in_progress', 'completed'],
-  })
-  @IsEnum(['pending', 'in_progress', 'completed'])
-  @IsOptional()
-  status?: 'pending' | 'in_progress' | 'completed';
-}
-```
-
----
-
-### 4. Query Todo DTO
-
-**File**: `src/modules/todos/dto/query-todo.dto.ts`
-
-```typescript
-import { IsOptional, IsInt, Min, Max, IsEnum, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-
-export class QueryTodoDto {
-  @ApiPropertyOptional({ default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ default: 10, minimum: 1, maximum: 100 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 10;
-
-  @ApiPropertyOptional({ enum: ['pending', 'in_progress', 'completed'] })
-  @IsOptional()
-  @IsEnum(['pending', 'in_progress', 'completed'])
-  status?: string;
-
-  @ApiPropertyOptional({ enum: ['low', 'medium', 'high'] })
-  @IsOptional()
-  @IsEnum(['low', 'medium', 'high'])
-  priority?: string;
-
-  @ApiPropertyOptional({ default: 'created_at' })
-  @IsOptional()
-  @IsString()
-  sortBy?: string = 'createdAt';
-
-  @ApiPropertyOptional({ enum: ['asc', 'desc'], default: 'desc' })
-  @IsOptional()
-  @IsEnum(['asc', 'desc'])
-  sortOrder?: 'asc' | 'desc' = 'desc';
-
-  @ApiPropertyOptional({ description: 'Search in title and description' })
-  @IsOptional()
-  @IsString()
-  search?: string;
-}
-```
-
----
-
-### 5. Todo Service
+### 3. Todo Service (Simplified)
 
 **File**: `src/modules/todos/todos.service.ts`
 
 ```typescript
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { TodosRepository } from './todos.repository';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
@@ -1412,17 +1141,10 @@ export class TodosService {
 
   constructor(private readonly todosRepository: TodosRepository) {}
 
-  async findAll(
-    userId: string,
-    query: QueryTodoDto,
-  ): Promise<PaginatedResponse<Todo>> {
-    this.logger.log(`Finding todos for user ${userId}`);
+  async findAll(query: QueryTodoDto): Promise<PaginatedResponse<Todo>> {
+    this.logger.log('Finding all todos');
 
-    const [todos, total] = await this.todosRepository.findAllPaginated(
-      userId,
-      query,
-    );
-
+    const [todos, total] = await this.todosRepository.findAllPaginated(query);
     const totalPages = Math.ceil(total / query.limit);
 
     return {
@@ -1437,8 +1159,8 @@ export class TodosService {
     };
   }
 
-  async findOne(id: string, userId: string): Promise<Todo> {
-    this.logger.log(`Finding todo ${id} for user ${userId}`);
+  async findOne(id: string): Promise<Todo> {
+    this.logger.log(`Finding todo ${id}`);
 
     const todo = await this.todosRepository.findOneById(id);
 
@@ -1446,47 +1168,33 @@ export class TodosService {
       throw new NotFoundException(`Todo with ID ${id} not found`);
     }
 
-    if (todo.userId !== userId) {
-      throw new ForbiddenException('You do not have access to this todo');
-    }
-
     return todo;
   }
 
-  async create(userId: string, createTodoDto: CreateTodoDto): Promise<Todo> {
-    this.logger.log(`Creating todo for user ${userId}`);
+  async create(createTodoDto: CreateTodoDto): Promise<Todo> {
+    this.logger.log('Creating new todo');
 
-    const todo = await this.todosRepository.createTodo({
-      ...createTodoDto,
-      userId,
-    });
+    const todo = await this.todosRepository.createTodo(createTodoDto);
 
     this.logger.log(`Todo created with ID ${todo.id}`);
     return todo;
   }
 
-  async update(
-    id: string,
-    userId: string,
-    updateTodoDto: UpdateTodoDto,
-  ): Promise<Todo> {
-    this.logger.log(`Updating todo ${id} for user ${userId}`);
+  async update(id: string, updateTodoDto: UpdateTodoDto): Promise<Todo> {
+    this.logger.log(`Updating todo ${id}`);
 
-    const todo = await this.findOne(id, userId);
+    await this.findOne(id); // Check if exists
 
-    const updatedTodo = await this.todosRepository.updateTodo(
-      id,
-      updateTodoDto,
-    );
+    const updatedTodo = await this.todosRepository.updateTodo(id, updateTodoDto);
 
     this.logger.log(`Todo ${id} updated successfully`);
     return updatedTodo;
   }
 
-  async remove(id: string, userId: string): Promise<void> {
-    this.logger.log(`Deleting todo ${id} for user ${userId}`);
+  async remove(id: string): Promise<void> {
+    this.logger.log(`Deleting todo ${id}`);
 
-    await this.findOne(id, userId);
+    await this.findOne(id); // Check if exists
     await this.todosRepository.softDelete(id);
 
     this.logger.log(`Todo ${id} deleted successfully`);
@@ -1496,7 +1204,7 @@ export class TodosService {
 
 ---
 
-### 6. Todo Controller
+### 4. Todo Controller (Simplified)
 
 **File**: `src/modules/todos/todos.controller.ts`
 
@@ -1510,7 +1218,6 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -1518,19 +1225,14 @@ import {
   ApiTags,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { TodosService } from './todos.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { QueryTodoDto } from './dto/query-todo.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('todos')
 @Controller('api/v1/todos')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class TodosController {
   constructor(private readonly todosService: TodosService) {}
 
@@ -1538,36 +1240,31 @@ export class TodosController {
   @ApiOperation({ summary: 'Create a new todo' })
   @ApiResponse({ status: 201, description: 'Todo created successfully' })
   @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  create(@Body() createTodoDto: CreateTodoDto, @CurrentUser() user: any) {
-    return this.todosService.create(user.id, createTodoDto);
+  create(@Body() createTodoDto: CreateTodoDto) {
+    return this.todosService.create(createTodoDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'List all todos with pagination' })
   @ApiResponse({ status: 200, description: 'Todos retrieved successfully' })
-  findAll(@Query() query: QueryTodoDto, @CurrentUser() user: any) {
-    return this.todosService.findAll(user.id, query);
+  findAll(@Query() query: QueryTodoDto) {
+    return this.todosService.findAll(query);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single todo by ID' })
   @ApiResponse({ status: 200, description: 'Todo retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Todo not found' })
-  findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.todosService.findOne(id, user.id);
+  findOne(@Param('id') id: string) {
+    return this.todosService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a todo' })
   @ApiResponse({ status: 200, description: 'Todo updated successfully' })
   @ApiResponse({ status: 404, description: 'Todo not found' })
-  update(
-    @Param('id') id: string,
-    @Body() updateTodoDto: UpdateTodoDto,
-    @CurrentUser() user: any,
-  ) {
-    return this.todosService.update(id, user.id, updateTodoDto);
+  update(@Param('id') id: string, @Body() updateTodoDto: UpdateTodoDto) {
+    return this.todosService.update(id, updateTodoDto);
   }
 
   @Delete(':id')
@@ -1575,8 +1272,8 @@ export class TodosController {
   @ApiOperation({ summary: 'Delete a todo' })
   @ApiResponse({ status: 204, description: 'Todo deleted successfully' })
   @ApiResponse({ status: 404, description: 'Todo not found' })
-  remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.todosService.remove(id, user.id);
+  remove(@Param('id') id: string) {
+    return this.todosService.remove(id);
   }
 }
 ```
@@ -1615,15 +1312,6 @@ DATABASE_POOL_MIN=2
 DATABASE_POOL_MAX=10
 
 # ======================
-# JWT Authentication
-# ======================
-# IMPORTANT: Change these in production!
-JWT_SECRET=your-super-secret-jwt-key-change-in-production-use-rs256
-JWT_EXPIRES_IN=15m
-REFRESH_TOKEN_EXPIRES_IN=7d
-JWT_ALGORITHM=RS256
-
-# ======================
 # CORS Configuration
 # ======================
 CORS_ORIGIN=http://localhost:3000,http://localhost:4200
@@ -1647,19 +1335,12 @@ SWAGGER_PATH=api/docs
 SENTRY_DSN=
 SENTRY_ENVIRONMENT=development
 JAEGER_ENDPOINT=http://localhost:14268/api/traces
-METRICS_ENABLED=true
 
 # ======================
 # Health Check
 # ======================
 HEALTH_CHECK_DATABASE_TIMEOUT=5000
 HEALTH_CHECK_MEMORY_THRESHOLD=512
-
-# ======================
-# Feature Flags
-# ======================
-ENABLE_SOFT_DELETE=true
-ENABLE_AUDIT_LOG=true
 ```
 
 ---
@@ -1670,6 +1351,7 @@ ENABLE_AUDIT_LOG=true
 
 **Goal**: Test individual units in isolation with mocked dependencies.
 **Coverage Target**: 80%+ for all services and controllers.
+**Pass Requirement**: **100% of tests must pass**
 
 **Test Structure (AAA Pattern):**
 ```typescript
@@ -1701,7 +1383,6 @@ describe('TodosService', () => {
   describe('create', () => {
     it('should create a new todo successfully', async () => {
       // Arrange
-      const userId = 'user-123';
       const createDto: CreateTodoDto = {
         title: 'Test Todo',
         description: 'Test Description',
@@ -1709,7 +1390,6 @@ describe('TodosService', () => {
       const expectedTodo = {
         id: 'todo-123',
         ...createDto,
-        userId,
         status: 'pending',
         priority: 'medium',
         createdAt: new Date(),
@@ -1718,14 +1398,11 @@ describe('TodosService', () => {
       repository.createTodo.mockResolvedValue(expectedTodo as any);
 
       // Act
-      const result = await service.create(userId, createDto);
+      const result = await service.create(createDto);
 
       // Assert
       expect(result).toEqual(expectedTodo);
-      expect(repository.createTodo).toHaveBeenCalledWith({
-        ...createDto,
-        userId,
-      });
+      expect(repository.createTodo).toHaveBeenCalledWith(createDto);
     });
   });
 
@@ -1735,166 +1412,12 @@ describe('TodosService', () => {
       repository.findOneById.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.findOne('non-existent', 'user-123')).rejects.toThrow(
+      await expect(service.findOne('non-existent')).rejects.toThrow(
         NotFoundException,
       );
     });
-
-    it('should throw ForbiddenException when user does not own todo', async () => {
-      // Arrange
-      const todo = {
-        id: 'todo-123',
-        userId: 'other-user',
-      };
-      repository.findOneById.mockResolvedValue(todo as any);
-
-      // Act & Assert
-      await expect(service.findOne('todo-123', 'user-123')).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
   });
 });
-```
-
-**Commands:**
-```bash
-# Run unit tests
-nx test api-nest-service
-
-# Run with coverage
-nx test api-nest-service --coverage
-
-# Run in watch mode
-nx test api-nest-service --watch
-```
-
----
-
-### 2. Integration Tests
-
-**Goal**: Test database operations with real database connection.
-**Approach**: Use test database or test containers.
-
-**Setup:**
-```typescript
-describe('TodosRepository Integration Tests', () => {
-  let repository: TodosRepository;
-  let connection: DataSource;
-
-  beforeAll(async () => {
-    connection = await createConnection({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5433, // Test database port
-      username: 'test',
-      password: 'test',
-      database: 'polystack_test',
-      entities: [Todo],
-      synchronize: true,
-    });
-    repository = connection.getRepository(Todo);
-  });
-
-  afterAll(async () => {
-    await connection.destroy();
-  });
-
-  afterEach(async () => {
-    await repository.clear();
-  });
-
-  it('should create and retrieve a todo from database', async () => {
-    const todoData = {
-      title: 'Test Todo',
-      description: 'Test Description',
-      userId: 'user-123',
-    };
-
-    const created = await repository.save(todoData);
-    const retrieved = await repository.findOne({ where: { id: created.id } });
-
-    expect(retrieved).toBeDefined();
-    expect(retrieved.title).toBe(todoData.title);
-  });
-});
-```
-
----
-
-### 3. E2E Tests
-
-**Goal**: Test full HTTP request/response cycle.
-**Tool**: Supertest for HTTP assertions.
-
-**Setup:**
-```typescript
-describe('Todos E2E Tests', () => {
-  let app: INestApplication;
-  let authToken: string;
-
-  beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
-
-    // Get auth token
-    const loginResponse = await request(app.getHttpServer())
-      .post('/auth/login')
-      .send({ email: 'test@example.com', password: 'password' });
-    authToken = loginResponse.body.accessToken;
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
-  describe('POST /api/v1/todos', () => {
-    it('should create a new todo', () => {
-      return request(app.getHttpServer())
-        .post('/api/v1/todos')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          title: 'Test Todo',
-          description: 'Test Description',
-          priority: 'high',
-        })
-        .expect(201)
-        .expect((res) => {
-          expect(res.body.success).toBe(true);
-          expect(res.body.data).toHaveProperty('id');
-          expect(res.body.data.title).toBe('Test Todo');
-        });
-    });
-
-    it('should return 401 without auth token', () => {
-      return request(app.getHttpServer())
-        .post('/api/v1/todos')
-        .send({ title: 'Test' })
-        .expect(401);
-    });
-
-    it('should return 400 for invalid data', () => {
-      return request(app.getHttpServer())
-        .post('/api/v1/todos')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({ priority: 'invalid' })
-        .expect(400);
-    });
-  });
-});
-```
-
-**Commands:**
-```bash
-# Run E2E tests
-nx e2e api-nest-service-e2e
-
-# Run specific test file
-nx e2e api-nest-service-e2e --testFile=todos.e2e-spec.ts
 ```
 
 ---
@@ -1903,10 +1426,10 @@ nx e2e api-nest-service-e2e --testFile=todos.e2e-spec.ts
 
 Before marking implementation complete, verify ALL of the following:
 
-### ✅ Tests
-- [ ] All unit tests pass
-- [ ] All integration tests pass
-- [ ] All E2E tests pass
+### ✅ Tests (CRITICAL)
+- [ ] **All unit tests pass (100%)**
+- [ ] **All integration tests pass (100%)**
+- [ ] **All E2E tests pass (100%)**
 - [ ] Code coverage ≥ 80% for all modules
 - [ ] Coverage report generated
 
@@ -1929,9 +1452,7 @@ Before marking implementation complete, verify ALL of the following:
 - [ ] Search functionality works
 - [ ] Soft delete working properly
 
-### ✅ Authentication & Security
-- [ ] JWT authentication enforced
-- [ ] Users can only access their own todos
+### ✅ Security
 - [ ] Input validation working on all endpoints
 - [ ] SQL injection prevention verified
 - [ ] XSS prevention verified
@@ -1949,7 +1470,6 @@ Before marking implementation complete, verify ALL of the following:
 - [ ] Structured JSON logs output
 - [ ] Request/response logging works
 - [ ] Error logging includes stack traces
-- [ ] Log levels configurable
 
 ### ✅ Docker
 - [ ] Docker image builds successfully
@@ -1963,7 +1483,6 @@ Before marking implementation complete, verify ALL of the following:
 - [ ] Database schema correct
 - [ ] Indexes created
 - [ ] Connection pooling configured
-- [ ] Queries optimized
 
 ---
 
@@ -1999,131 +1518,13 @@ docker run -d \
   --env-file .env \
   api-nest-service:latest
 
-# Check logs
-docker logs -f api-nest-service
-
 # Check health
 curl http://localhost:3100/health
 ```
 
-### Kubernetes Deployment
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: api-nest-service
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: api-nest-service
-  template:
-    metadata:
-      labels:
-        app: api-nest-service
-    spec:
-      containers:
-      - name: api-nest-service
-        image: api-nest-service:latest
-        ports:
-        - containerPort: 3100
-        env:
-        - name: NODE_ENV
-          value: "production"
-        - name: DATABASE_HOST
-          valueFrom:
-            secretKeyRef:
-              name: database-secrets
-              key: host
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 3100
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 3100
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-```
-
 ---
 
-## References
-
-### PolyStack Documentation
-- [Initial Idea](./initial-idea.md) - Technical specifications
-- [Implementation Plan](./implementation-plan.md) - 16-phase roadmap
-- [CLAUDE.md](../.claude/CLAUDE.md) - Implementation guide
-- [PROGRESS.md](./PROGRESS.md) - Progress tracker
-
-### NestJS Documentation
-- [NestJS Official Docs](https://docs.nestjs.com/)
-- [TypeORM Documentation](https://typeorm.io/)
-- [Passport JWT Strategy](https://www.passportjs.org/packages/passport-jwt/)
-- [Class Validator](https://github.com/typestack/class-validator)
-
-### Best Practices
-- [12-Factor App](https://12factor.net/)
-- [REST API Design](https://restfulapi.net/)
-- [OpenAPI Specification](https://swagger.io/specification/)
-- [OWASP Security Guidelines](https://owasp.org/)
-
----
-
-## Appendix: Troubleshooting
-
-### Common Issues
-
-**Issue: Cannot connect to database**
-```bash
-# Check database is running
-docker ps | grep postgres
-
-# Check connection string
-echo $DATABASE_URL
-
-# Test connection
-psql -h localhost -U postgres -d polystack_dev
-```
-
-**Issue: Tests failing**
-```bash
-# Clear Jest cache
-nx reset
-
-# Run tests with verbose output
-nx test api-nest-service --verbose
-
-# Run specific test
-nx test api-nest-service --testFile=todos.service.spec.ts
-```
-
-**Issue: Docker build fails**
-```bash
-# Check Dockerfile syntax
-docker build --no-cache -t api-nest-service:latest .
-
-# Check Docker logs
-docker logs api-nest-service
-
-# Check disk space
-docker system df
-```
-
----
-
-**Document Version**: 1.0
+**Document Version**: 2.0 (Simplified - No Auth)
 **Last Updated**: 2025-10-17
 **Status**: Ready for Implementation
-**Estimated Total Time**: 15-20 hours
+**Estimated Total Time**: 12-15 hours
