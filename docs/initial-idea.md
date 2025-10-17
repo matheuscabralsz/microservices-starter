@@ -16,14 +16,30 @@ PolyStack is an Nx monorepo for polyglot microservices on AWS. This document pro
 
 ## Naming Convention
 
-**Pattern**: `<purpose>-<language-or-framework>-<category>`
+**Pattern**: `<purpose>-<languageorframework>-<category>`
 
 **Categories**:
 - `web` - Frontend applications
 - `app` - Mobile applications
 - `service` - Backend microservices
+
+**Purposes**:
 - `worker` - Background processors
 - `gateway` - API gateways
+- `auth` - Authentication services
+- `payment` - Payment gateways
+- `admin` - Admin dashboards
+
+**Language or Framework**:
+- `react` - React
+- `angular` - Angular
+- `vue` - Vue
+- `nestjs` - NestJS
+- `spring` - Spring Boot
+- `golang` - Gin
+- `fastapi` - FastAPI
+- `rust` - Actix-web
+- `python` - Python:
 
 **Examples**:
 - `api-nest-service`
@@ -61,38 +77,32 @@ polystack/
 
 ### Web Applications (Micro-Frontends)
 
-| Name | Framework | Port | Purpose |
-|------|-----------|------|---------|
-| `shell-react-web` | React 18 | 3000 | Module federation host |
-| `api-angular-web` | Angular 17 | 4200 | API documentation UI |
-| `api-react-web` | React 18 | 3001 | Alternative API explorer |
-| `auth-react-web` | React 18 | 3002 | Auth flows (login/register) |
-| `checkout-react-web` | React 18 | 3003 | Payment checkout |
-| `dashboard-vue-web` | Vue 3 | 8080 | Admin dashboard |
-| `admin-angular-web` | Angular 17 | 4201 | Admin panel |
-| `marketing-astro-web` | Astro | 3004 | Static marketing site |
-| `shared-playbook` | Multi | N/A | Design system library |
-
-**Testing**: Jest/Vitest (unit), Playwright/Cypress (E2E)
+| Name                  | Framework        | Port | Purpose                     |
+|-----------------------|------------------|------|-----------------------------|
+| `shell-react-web`     | React (Latest)   | 3000 | Module federation host      |
+| `auth-vue-web`        | Vue (Latest)     | 3001 | Auth flows (login/register) |
+| `checkout-svelte-web` | Svelte (Latest)  | 3002 | Payment checkout            |
+| `api-angular-web`     | Angular (Latest) | 8000 | API consumer                |
+| `shared-playbook`     | Multi            | N/A  | Design system library       |
 
 ### Mobile Applications
 
-| Name | Framework | Platforms |
-|------|-----------|-----------|
-| `mobile-flutter-app` | Flutter | iOS, Android, Web |
-| `mobile-react-native-app` | React Native | iOS, Android |
-| `mobile-ionic-app` | Ionic + Angular | iOS, Android, Web |
-| `shared-mobile-components` | Platform-specific | All |
+| Name                   | Framework | Platforms |
+|------------------------|-----------|-----------|
+| `complete-flutter-app` | Flutter | iOS, Android, Web |
+| `api-react-native-app` | React Native | iOS, Android |
+| `api-ionic-app`        | Ionic + Angular | iOS, Android, Web |
+| `auth-ionic-app`       | Ionic + Angular | iOS, Android, Web |
 
 ### API Services (RESTful)
 
-| Name | Language | Framework | Port |
-|------|----------|-----------|------|
-| `api-nest-service` | TypeScript | NestJS | 3100 |
-| `api-spring-service` | Java 17 | Spring Boot | 8081 |
-| `api-golang-service` | Go 1.21+ | Gin | 8082 |
-| `api-fastapi-service` | Python 3.11+ | FastAPI | 8083 |
-| `api-rust-service` | Rust | Actix-web | 8084 |
+| Name | Language               | Framework | Port |
+|------|------------------------|-----------|------|
+| `api-nest-service` | TypeScript             | NestJS | 3100 |
+| `api-spring-service` | Java (Latest)                  | Spring Boot | 8081 |
+| `api-golang-service` | Go (Latest)            | Gin | 8082 |
+| `api-fastapi-service` | Python (Latest)        | FastAPI | 8083 |
+| `api-rust-service` | Rust                   | Actix-web | 8084 |
 
 **Required Endpoints**:
 - `GET /health` - Health check
