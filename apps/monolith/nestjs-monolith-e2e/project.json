@@ -1,0 +1,17 @@
+{
+  "name": "nestjs-monolith-e2e",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "implicitDependencies": ["nestjs-monolith"],
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
+      "options": {
+        "jestConfig": "apps/monolith/nestjs-monolith-e2e/jest.config.ts",
+        "passWithNoTests": true
+      },
+      "dependsOn": ["nestjs-monolith:build", "nestjs-monolith:serve"]
+    }
+  }
+}

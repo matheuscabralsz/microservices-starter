@@ -18,6 +18,24 @@
         "${workspaceFolder}/apps/backend/api-nest-service/dist/**/*.(m|c|)js",
         "!**/node_modules/**"
       ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug nestjs-monolith with Nx",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nx", "serve", "nestjs-monolith"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=9230"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": ["<node_internals>/**"],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/apps/monolith/nestjs-monolith/dist/**/*.(m|c|)js",
+        "!**/node_modules/**"
+      ]
     }
   ]
 }
