@@ -813,6 +813,213 @@ JAEGER_ENDPOINT=http://localhost:14268/api/traces
 
 ---
 
+## Monolith Architecture
+
+### Purpose
+
+The `apps/monolith/nestjs-monolith/` folder contains a production-ready NestJS monolithic backend that implements **Clean Architecture** + **Domain-Driven Design (DDD)** + **Hexagonal Architecture**. This modular approach allows:
+
+- Clear separation of concerns and business domains
+- Easy testability and framework independence
+- Future migration to microservices (each domain can become a service)
+- Scalability and maintainability
+
+### Architectural Layers
+
+The monolith is organized in vertical slices by domain, with each domain containing all necessary layers:
+
+```
+Domain (Bounded Context)
+├── domain/                    # Pure business logic (framework-agnostic)
+│   ├── entities/              # Core business entities with invariants
+│   └── value-objects/         # Immutable value objects (Email, Money, etc)
+├── application/               # Use cases and orchestration
+│   └── usecases/              # One per business operation (CreateUser, PayOrder, etc)
+├── ports/                     # Interfaces defining contracts
+│   └── repositories/          # Data access contracts (IUserRepository)
+└── adapters/                  # Concrete implementations
+    ├── controllers/           # HTTP endpoints (inbound)
+    └── repositories/          # Database implementations (outbound)
+```
+
+### Layer Responsibilities
+
+**Domain Layer** (`domain/`)
+- Core business logic completely independent of frameworks
+- Entities with business invariants (rules that must be enforced)
+- Immutable Value Objects (Email, Money, Address, etc)
+- Domain Exceptions for business rule violations
+- No async/await, no database code, no HTTP concerns
+
+**Application Layer** (`application/`)
+- Use cases orchestrating domain logic
+- Input/Output DTOs for each operation
+- Result<T> pattern for error handling
+- Depends on domain and repository ports, not implementations
+
+**Ports** (`ports/`)
+- Interfaces defining contracts between layers
+- Inbound ports: Use case interfaces
+- Outbound ports: Repository, event bus, external API contracts
+- Enable dependency inversion and testability
+
+**Adapters** (`adapters/`)
+- HTTP Controllers (inbound adapters)
+- Repository implementations (outbound adapters)
+- External API clients
+- Only layer that knows about frameworks and technologies
+
+**Shared/Infrastructure** (`shared/`)
+- Base classes (BaseEntity, BaseValueObject)
+- Common exceptions and utility types
+- Global HTTP filters and middleware
+- Database, cache, event bus implementations
+- Cross-domain concerns
+
+### Folder Structure
+
+```
+apps/monolith/nestjs-monolith/src/
+├── domains/                           # Business domains
+│   ├── user/                          # User domain (example - fully implemented)
+│   │   ├── domain/
+│   │   │   ├── entities/
+│   │   │   │   └── user.entity.ts
+│   │   │   └── value-objects/
+│   │   │       └── email.value-object.ts
+│   │   ├── application/
+│   │   │   └── usecases/
+│   │   │       ├── create-user.usecase.ts
+│   │   │       └── get-user.usecase.ts
+│   │   ├── ports/
+│   │   │   └── repositories/
+│   │   │       └── user.repository.port.ts
+│   │   ├── adapters/
+│   │   │   ├── controllers/
+│   │   │   │   └── user.controller.ts
+│   │   │   └── repositories/
+│   │   │       └── in-memory-user.repository.ts
+│   │   └── user.module.ts
+│   ├── payment/                       # Payment domain (template)
+│   ├── order/                         # Order domain (template)
+│   ├── notification/                  # Notification domain (template)
+│   └── product/                       # Product domain (template)
+├── shared/
+│   ├── kernel/
+│   │   ├── entities/
+│   │   │   └── base.entity.ts
+│   │   ├── value-objects/
+│   │   │   └── base.value-object.ts
+│   │   ├── exceptions/
+│   │   │   └── domain.exception.ts    # All domain exceptions
+│   │   └── interfaces/
+│   │       └── result.interface.ts    # Result<T> pattern
+│   ├── infrastructure/
+│   │   ├── database/                  # TypeORM setup (future)
+│   │   ├── cache/                     # Redis (future)
+│   │   ├── event-bus/                 # Event publishing
+│   │   ├── external-apis/             # Third-party integrations
+│   │   └── http/
+│   │       ├── controllers/
+│   │       │   └── health.controller.ts
+│   │       └── filters/
+│   │           └── domain-exception.filter.ts
+│   └── shared.module.ts
+├── config/                            # Application config
+├── app.module.ts                      # Root NestJS module
+└── main.ts                            # Bootstrap
+
+apps/monolith/nestjs-monolith-e2e/     # E2E tests
+```
+
+### Data Flow (Hexagonal Architecture)
+
+```
+HTTP Request
+    ↓
+Controller (Inbound Adapter)
+    ↓
+Use Case (Application Layer)
+    ↓
+Domain Entity (Domain Layer - Business Logic)
+    ↓
+Repository Port Interface
+    ↓
+Repository Implementation (Outbound Adapter)
+    ↓
+Database / Cache / External API
+    ↓
+Response back through layers
+    ↓
+HTTP Response
+```
+
+### Naming Convention for Monolith
+
+- `<domain>-<operation>.usecase.ts` - Use cases
+- `<entity>.entity.ts` - Domain entities
+- `<concept>.value-object.ts` - Value objects
+- `I<entity>Repository` - Repository interfaces
+- `<entity>.controller.ts` - HTTP controllers
+- `<database>-<entity>.repository.ts` - Repository implementations
+
+**Examples**:
+- `create-user.usecase.ts`
+- `user.entity.ts`
+- `email.value-object.ts`
+- `IUserRepository`
+- `user.controller.ts`
+- `postgres-user.repository.ts`
+
+### Adding New Domains
+
+Each domain follows the same pattern as the User domain. Follow these steps:
+
+1. **Create domain structure**:
+   ```bash
+   mkdir -p src/domains/payment/{domain,application,ports,adapters}
+   ```
+
+2. **Implement domain layer first** (entities, value objects, exceptions)
+   - Define boundaries and business rules
+
+3. **Define ports** (repository interfaces)
+   - What the domain needs from outside
+
+4. **Implement application layer** (use cases)
+   - Orchestrate domain logic
+
+5. **Create adapters** (controllers, repositories)
+   - Connect to HTTP and external systems
+
+6. **Create NestJS module**
+   - Wire up dependency injection
+
+7. **Register in app.module.ts**
+   - Import the new domain module
+
+See `apps/monolith/nestjs-monolith/README.md` for complete examples.
+
+### Key Technologies
+
+- **Framework**: NestJS (TypeScript)
+- **Testing**: Jest, Supertest
+- **Current DB**: In-Memory (development)
+- **Future DB**: PostgreSQL with TypeORM
+- **Pattern**: Clean Architecture + DDD + Hexagonal
+
+### Quality Gates for Monolith
+
+- ✅ All layers properly separated (no framework in domain)
+- ✅ Repository implementations can be swapped
+- ✅ Use cases testable without HTTP layer
+- ✅ Domain logic testable without database
+- ✅ 80% code coverage minimum
+- ✅ All business rules enforced in entities
+- ✅ No circular dependencies
+
+---
+
 ## File Organization
 
 ### Backend Service Files
