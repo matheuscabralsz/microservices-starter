@@ -24,6 +24,27 @@
 
 ---
 
+## Development Workflow
+
+### Git Branching Strategy
+- **Single feature branch**: `feature/2-api-nest-service` for the entire service
+- Work phase by phase for better review points
+- Commit after completing each phase
+- Merge to main only after all quality gates pass
+
+### Implementation Approach
+- **Phase-by-phase execution**: Complete one phase fully before moving to next
+- **Testing strategy**: Write tests AFTER implementing each feature (not TDD)
+- **Review points**: Review and commit after each phase completion
+- **PostgreSQL setup**: Create docker-compose.yml FIRST before starting Phase 1
+
+### Technology Decisions
+- **TypeORM**: DataSource pattern (0.3+ modern approach)
+- **Repository**: Injectable service with injected `Repository<Todo>`
+- **Integration Tests**: Testcontainers for spinning up PostgreSQL during tests
+
+---
+
 ## Overview
 
 The `api-nest-service` is a **simple TODO CRUD microservice** built to demonstrate NestJS best practices. This is a learning-focused implementation without authentication complexity.
@@ -73,6 +94,7 @@ The `api-nest-service` is a **simple TODO CRUD microservice** built to demonstra
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/config": "^3.0.0",
     "@nestjs/typeorm": "^10.0.0",
     "@nestjs/swagger": "^7.0.0",
     "typeorm": "^0.3.0",
@@ -87,7 +109,9 @@ The `api-nest-service` is a **simple TODO CRUD microservice** built to demonstra
     "jest": "^29.0.0",
     "supertest": "^6.3.0",
     "@types/jest": "^29.0.0",
-    "@types/supertest": "^6.0.0"
+    "@types/supertest": "^6.0.0",
+    "@testcontainers/postgresql": "^10.0.0",
+    "testcontainers": "^10.0.0"
   }
 }
 ```
@@ -367,10 +391,8 @@ apps/services/api-nest-service/
 │
 ├── Dockerfile                            # Multi-stage Docker build
 ├── .dockerignore
-├── docker-compose.yml                    # Local development
 ├── .env                                  # Local env (gitignored)
 ├── .env.example                          # Example env file
-├── ormconfig.ts                          # TypeORM config
 ├── jest.config.ts                        # Jest configuration
 ├── tsconfig.json                         # TypeScript config
 ├── tsconfig.app.json
@@ -383,6 +405,72 @@ apps/services/api-nest-service/
 ---
 
 ## Implementation Phases
+
+### Phase 0: Database Infrastructure (Prerequisite)
+**Estimated Time**: 30 minutes
+**Must Complete Before Phase 1**
+
+#### Task 0: Create PostgreSQL docker-compose.yml for local development
+- Create docker-compose configuration for PostgreSQL
+- Include database initialization
+- Configure volumes for data persistence
+- Test database connectivity
+
+**File to Create:**
+- `tools/local-dev/docker-compose.yml`
+
+**Configuration:**
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: polystack-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: polystack_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+```
+
+**Commands:**
+```bash
+# Start PostgreSQL
+cd tools/local-dev
+docker-compose up -d
+
+# Verify database is running
+docker-compose ps
+
+# Test connection
+psql -h localhost -U postgres -d polystack_dev
+```
+
+**Deliverables:**
+- ✅ docker-compose.yml created
+- ✅ PostgreSQL container running
+- ✅ Database accessible on localhost:5432
+- ✅ Health check passing
+
+**Commit After This Phase:**
+```bash
+git add tools/local-dev/docker-compose.yml
+git commit -m "feat(infrastructure): add PostgreSQL docker-compose for local development"
+```
+
+---
 
 ### Phase 1: Project Setup (Tasks 1-4)
 **Estimated Time**: 1-2 hours
@@ -399,6 +487,7 @@ apps/services/api-nest-service/
 nx generate @nx/nest:application api-nest-service
 
 # Install dependencies
+npm install --save @nestjs/config
 npm install --save @nestjs/typeorm typeorm pg
 npm install --save @nestjs/swagger swagger-ui-express
 npm install --save class-validator class-transformer
@@ -417,37 +506,73 @@ npm install --save-dev @types/supertest
 ---
 
 #### Task 2: Configure TypeORM with PostgreSQL database connection
-- Create database configuration module
+- Create database configuration module using modern DataSource pattern (TypeORM 0.3+)
 - Set up TypeORM connection with PostgreSQL
 - Configure connection pooling
 - Set up migration configuration
 
-**Files to Create:**
+**File to Create:**
 - `src/config/database.config.ts`
-- `ormconfig.ts`
 
-**Configuration Details:**
+**Configuration Details (Modern DataSource Pattern):**
 ```typescript
-// ormconfig.ts
-export default {
+// src/config/database.config.ts
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
+
+export const getTypeOrmConfig = (configService: ConfigService): DataSourceOptions => ({
+  type: 'postgres',
+  host: configService.get('DATABASE_HOST', 'localhost'),
+  port: configService.get('DATABASE_PORT', 5432),
+  username: configService.get('DATABASE_USER', 'postgres'),
+  password: configService.get('DATABASE_PASSWORD', 'postgres'),
+  database: configService.get('DATABASE_NAME', 'polystack_dev'),
+  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+  synchronize: false, // Always false - use migrations
+  logging: configService.get('NODE_ENV') === 'development',
+  ssl: configService.get('DATABASE_SSL') === 'true',
+  poolSize: configService.get('DATABASE_POOL_MAX', 10),
+});
+
+// For migrations CLI
+export const AppDataSource = new DataSource({
   type: 'postgres',
   host: process.env.DATABASE_HOST || 'localhost',
   port: parseInt(process.env.DATABASE_PORT, 10) || 5432,
   username: process.env.DATABASE_USER || 'postgres',
   password: process.env.DATABASE_PASSWORD || 'postgres',
   database: process.env.DATABASE_NAME || 'polystack_dev',
-  entities: ['src/**/*.entity{.ts,.js}'],
-  migrations: ['src/migrations/*{.ts,.js}'],
-  synchronize: false, // Always false in production
-  logging: process.env.NODE_ENV === 'development',
-  ssl: process.env.DATABASE_SSL === 'true',
-};
+  entities: ['src/**/*.entity.ts'],
+  migrations: ['src/migrations/*.ts'],
+  synchronize: false,
+});
+```
+
+**app.module.ts Integration:**
+```typescript
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { getTypeOrmConfig } from './config/database.config';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) =>
+        getTypeOrmConfig(configService),
+    }),
+  ],
+})
+export class AppModule {}
 ```
 
 **Deliverables:**
-- ✅ Database configuration file created
+- ✅ Database configuration file created with DataSource pattern
 - ✅ TypeORM module imported in `app.module.ts`
 - ✅ Connection tested and working
+- ✅ No deprecated ormconfig.ts file
 
 ---
 
@@ -556,13 +681,65 @@ npm run typeorm migration:revert
 ---
 
 #### Task 6: Implement TodoRepository for database operations
-- Create custom repository with TypeORM
+- Create Injectable repository service (not deprecated @EntityRepository)
+- Inject TypeORM's `Repository<Todo>` into the service
 - Implement CRUD methods
 - Add pagination and filtering logic
 - Handle soft deletes properly
 
 **File to Create:**
 - `src/modules/todos/todos.repository.ts`
+
+**Implementation Pattern:**
+```typescript
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Todo } from './entities/todo.entity';
+import { CreateTodoDto } from './dto/create-todo.dto';
+import { UpdateTodoDto } from './dto/update-todo.dto';
+import { QueryTodoDto } from './dto/query-todo.dto';
+
+@Injectable()
+export class TodosRepository {
+  constructor(
+    @InjectRepository(Todo)
+    private readonly repository: Repository<Todo>,
+  ) {}
+
+  async findAllPaginated(query: QueryTodoDto): Promise<[Todo[], number]> {
+    // Implementation with pagination and filtering
+  }
+
+  async findOneById(id: string): Promise<Todo | null> {
+    return this.repository.findOne({ where: { id } });
+  }
+
+  async createTodo(createTodoDto: CreateTodoDto): Promise<Todo> {
+    const todo = this.repository.create(createTodoDto);
+    return this.repository.save(todo);
+  }
+
+  async updateTodo(id: string, updateTodoDto: UpdateTodoDto): Promise<Todo> {
+    await this.repository.update(id, updateTodoDto);
+    return this.findOneById(id);
+  }
+
+  async softDelete(id: string): Promise<void> {
+    await this.repository.softDelete(id);
+  }
+}
+```
+
+**Register in Module:**
+```typescript
+@Module({
+  imports: [TypeOrmModule.forFeature([Todo])],
+  providers: [TodosRepository, TodosService],
+  controllers: [TodosController],
+})
+export class TodosModule {}
+```
 
 **Key Methods:**
 - `findAllPaginated()` - List with pagination and filters
@@ -572,10 +749,12 @@ npm run typeorm migration:revert
 - `softDelete()` - Soft delete todo
 
 **Deliverables:**
-- ✅ TodoRepository class created
+- ✅ TodoRepository Injectable service created
+- ✅ Repository<Todo> injected via constructor
 - ✅ All CRUD methods implemented
 - ✅ Pagination logic working
 - ✅ Soft delete handling
+- ✅ Registered in TodosModule
 
 ---
 
@@ -842,13 +1021,75 @@ SwaggerModule.setup('api/docs', app, document);
 ---
 
 #### Task 15: Write integration tests for database operations
-- Test with real database (test container or test DB)
+- Test with real PostgreSQL database using **Testcontainers**
 - Test CRUD operations end-to-end
 - Test transactions
 - Test data integrity
 
+**Dependencies to Install:**
+```bash
+npm install --save-dev @testcontainers/postgresql testcontainers
+```
+
 **File to Create:**
 - `test/integration/todos-database.spec.ts`
+
+**Implementation Pattern:**
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { PostgreSqlContainer } from '@testcontainers/postgresql';
+import { DataSource } from 'typeorm';
+import { Todo } from '../../src/modules/todos/entities/todo.entity';
+import { TodosRepository } from '../../src/modules/todos/todos.repository';
+
+describe('TodosRepository Integration Tests', () => {
+  let container: PostgreSqlContainer;
+  let dataSource: DataSource;
+  let repository: TodosRepository;
+
+  beforeAll(async () => {
+    // Start PostgreSQL container
+    container = await new PostgreSqlContainer('postgres:15-alpine')
+      .withDatabase('test_db')
+      .withUsername('test')
+      .withPassword('test')
+      .start();
+
+    // Create DataSource with container config
+    dataSource = new DataSource({
+      type: 'postgres',
+      host: container.getHost(),
+      port: container.getPort(),
+      username: container.getUsername(),
+      password: container.getPassword(),
+      database: container.getDatabase(),
+      entities: [Todo],
+      synchronize: true, // OK for tests
+    });
+
+    await dataSource.initialize();
+
+    // Create testing module
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        TypeOrmModule.forRoot(dataSource.options),
+        TypeOrmModule.forFeature([Todo]),
+      ],
+      providers: [TodosRepository],
+    }).compile();
+
+    repository = module.get<TodosRepository>(TodosRepository);
+  });
+
+  afterAll(async () => {
+    await dataSource.destroy();
+    await container.stop();
+  });
+
+  // Tests here...
+});
+```
 
 **Test Cases:**
 - ✅ Create todo saves to database
@@ -1524,7 +1765,63 @@ curl http://localhost:3100/health
 
 ---
 
-**Document Version**: 2.0 (Simplified - No Auth)
+## Summary of Implementation Updates
+
+This document has been updated to reflect the approved development workflow and modern best practices:
+
+### Key Changes Made:
+
+1. **Phase 0 Added**: PostgreSQL docker-compose setup must be completed FIRST before Phase 1
+   - Create `tools/local-dev/docker-compose.yml`
+   - Start database before generating NestJS project
+
+2. **Modern TypeORM DataSource Pattern** (Task 2):
+   - No deprecated `ormconfig.ts` file
+   - Using TypeORM 0.3+ DataSource pattern
+   - ConfigService integration for environment variables
+
+3. **Injectable Repository Service** (Task 6):
+   - Not using deprecated `@EntityRepository` decorator
+   - Using `@Injectable()` with injected `Repository<Todo>`
+   - Registered as provider in module
+
+4. **Testcontainers for Integration Tests** (Task 15):
+   - Using `@testcontainers/postgresql` for real database testing
+   - Spinning up PostgreSQL container during tests
+   - No manual test database setup required
+
+5. **Development Workflow**:
+   - Single feature branch: `feature/2-api-nest-service`
+   - Phase-by-phase implementation with commits after each phase
+   - Tests written AFTER features (not TDD)
+   - 100% passing tests requirement (not just coverage)
+
+6. **Dependencies Updated**:
+   - Added `@nestjs/config` for configuration management
+   - Added `@testcontainers/postgresql` and `testcontainers` for integration tests
+   - Removed all authentication-related packages
+
+### Implementation Order:
+
+```
+Phase 0: PostgreSQL Setup (FIRST)
+  ↓
+Phase 1: NestJS Project & TypeORM Setup
+  ↓
+Phase 2: Core Features (Entity, DTOs, Repository, Service, Controller)
+  ↓
+Phase 3: Cross-Cutting Concerns (Validation, Health Check, Swagger, Logging)
+  ↓
+Phase 4: Testing (Unit, Integration with Testcontainers, E2E)
+  ↓
+Phase 5: DevOps (Docker, Documentation)
+  ↓
+Phase 6: Quality Assurance (All Gates)
+```
+
+---
+
+**Document Version**: 3.0 (Updated with Approved Workflow)
 **Last Updated**: 2025-10-17
 **Status**: Ready for Implementation
-**Estimated Total Time**: 12-15 hours
+**Estimated Total Time**: 13-16 hours (including Phase 0)
