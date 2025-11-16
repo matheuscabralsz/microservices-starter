@@ -1,4 +1,4 @@
-import { Static, Type } from '@sinclair/typebox';
+import { Static } from '@sinclair/typebox';
 import { FastifyInstance } from 'fastify';
 import {
   createTodo,
@@ -8,65 +8,134 @@ import {
   toggleTodo,
   updateTodo,
 } from '../controllers/todo.controller';
-
-const TodoParams = Type.Object({ id: Type.String({ format: 'uuid' }) });
-const CreateTodoBody = Type.Object({
-  title: Type.String({ minLength: 1, maxLength: 255 }),
-  description: Type.Optional(Type.String({ maxLength: 2000 })),
-});
-const UpdateTodoBody = Type.Object({
-  title: Type.String({ minLength: 1, maxLength: 255 }),
-  description: Type.Optional(Type.Union([Type.String({ maxLength: 2000 }), Type.Null()])),
-  completed: Type.Boolean(),
-});
+import {
+  TodoParams,
+  CreateTodoBody,
+  UpdateTodoBody,
+  TodoListResponse,
+  TodoItemResponse,
+  ErrorResponse,
+} from '../schemas/todo.schemas';
 
 export async function registerTodoRoutes(app: FastifyInstance) {
-  // List
-  app.get('/api/v1/todos', { schema: { response: { 200: Type.Object({ success: Type.Boolean(), data: Type.Array(Type.Any()) }) } } }, listTodos);
+  // List all todos
+  app.get('/api/v1/todos', {
+    schema: {
+      description: 'Retrieve a list of all todos',
+      tags: ['todos'],
+      summary: 'List all todos',
+      response: {
+        200: TodoListResponse,
+        500: ErrorResponse,
+      },
+    },
+  }, listTodos);
 
-  // Get
+  // Get single todo
   app.get<{
     Params: Static<typeof TodoParams>;
   }>(
     '/api/v1/todos/:id',
-    { schema: { params: TodoParams } },
+    {
+      schema: {
+        description: 'Retrieve a specific todo by ID',
+        tags: ['todos'],
+        summary: 'Get todo by ID',
+        params: TodoParams,
+        response: {
+          200: TodoItemResponse,
+          404: ErrorResponse,
+          500: ErrorResponse,
+        },
+      },
+    },
     getTodo
   );
 
-  // Create
+  // Create new todo
   app.post<{
     Body: Static<typeof CreateTodoBody>;
   }>(
     '/api/v1/todos',
-    { schema: { body: CreateTodoBody } },
+    {
+      schema: {
+        description: 'Create a new todo item',
+        tags: ['todos'],
+        summary: 'Create todo',
+        body: CreateTodoBody,
+        response: {
+          201: TodoItemResponse,
+          400: ErrorResponse,
+          500: ErrorResponse,
+        },
+      },
+    },
     createTodo
   );
 
-  // Update (full)
+  // Update todo (full replace)
   app.put<{
     Params: Static<typeof TodoParams>;
     Body: Static<typeof UpdateTodoBody>;
   }>(
     '/api/v1/todos/:id',
-    { schema: { params: TodoParams, body: UpdateTodoBody } },
+    {
+      schema: {
+        description: 'Update an existing todo (full replacement)',
+        tags: ['todos'],
+        summary: 'Update todo',
+        params: TodoParams,
+        body: UpdateTodoBody,
+        response: {
+          200: TodoItemResponse,
+          404: ErrorResponse,
+          400: ErrorResponse,
+          500: ErrorResponse,
+        },
+      },
+    },
     updateTodo
   );
 
-  // Toggle completion
+  // Toggle completion status
   app.patch<{
     Params: Static<typeof TodoParams>;
   }>(
     '/api/v1/todos/:id',
-    { schema: { params: TodoParams } },
+    {
+      schema: {
+        description: 'Toggle the completion status of a todo',
+        tags: ['todos'],
+        summary: 'Toggle todo completion',
+        params: TodoParams,
+        response: {
+          200: TodoItemResponse,
+          404: ErrorResponse,
+          500: ErrorResponse,
+        },
+      },
+    },
     toggleTodo
   );
 
-  // Delete
+  // Delete todo
   app.delete<{
     Params: Static<typeof TodoParams>;
   }>(
     '/api/v1/todos/:id',
-    { schema: { params: TodoParams } },
+    {
+      schema: {
+        description: 'Delete a todo by ID',
+        tags: ['todos'],
+        summary: 'Delete todo',
+        params: TodoParams,
+        response: {
+          200: TodoItemResponse,
+          404: ErrorResponse,
+          500: ErrorResponse,
+        },
+      },
+    },
     deleteTodo
   );
 }
