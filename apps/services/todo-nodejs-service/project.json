@@ -1,0 +1,53 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "todo-nodejs-service",
+  "projectType": "application",
+  "root": "apps/services/todo-nodejs-service",
+  "sourceRoot": "apps/services/todo-nodejs-service/src",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run build",
+        "cwd": "apps/services/todo-nodejs-service"
+      },
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run dev",
+        "cwd": "apps/services/todo-nodejs-service"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm start",
+        "cwd": "apps/services/todo-nodejs-service"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm test",
+        "cwd": "apps/services/todo-nodejs-service"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run lint",
+        "cwd": "apps/services/todo-nodejs-service"
+      }
+    },
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm run format",
+        "cwd": "apps/services/todo-nodejs-service"
+      }
+    }
+  },
+  "tags": ["type:service", "framework:fastify", "language:node"]
+}
