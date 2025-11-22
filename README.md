@@ -27,6 +27,24 @@ polystack/
 └── docs/                     # Documentation
 ```
 
+## Useful Commands
+
+### Run everything
+```bash
+cd tools/local-dev && docker-compose up -d
+```
+
+### Run psql
+```bash
+cd tools/local-dev && docker exec -it polystack-postgres psql -U postgres -d todos
+```
+
+## Ports
+- todo-nodejs-service: 3105
+
+## Databases:
+  - todo
+
 ## Status
 
 🚧 **In Development** - Setting up the Nx monorepo infrastructure
