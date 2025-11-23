@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { TodoModel } from '../models/todo.model';
+import { eventPublisher } from '../services/event-publisher.service';
 
 export const listTodos = async (_req: FastifyRequest, reply: FastifyReply) => {
   const todos = await TodoModel.findAll();
@@ -26,6 +27,16 @@ export const createTodo = async (
 ) => {
   const { title, description } = req.body;
   const todo = await TodoModel.create(title, description);
+
+  // Publish event after successful creation
+  await eventPublisher.publishTodoCreated(
+    todo.id,
+    todo.title,
+    todo.description,
+    null,
+    req.id
+  );
+
   return reply.code(201).send({ success: true, data: todo });
 };
 
@@ -43,6 +54,17 @@ export const updateTodo = async (
       error: { code: 'NOT_FOUND', message: 'Todo not found', details: [] },
     });
   }
+
+  // Publish event after successful update
+  await eventPublisher.publishTodoUpdated(
+    updated.id,
+    updated.title,
+    updated.description,
+    updated.completed,
+    null,
+    req.id
+  );
+
   return reply.code(200).send({ success: true, data: updated });
 };
 
@@ -57,6 +79,14 @@ export const toggleTodo = async (
       error: { code: 'NOT_FOUND', message: 'Todo not found', details: [] },
     });
   }
+
+  // Publish completion event
+  await eventPublisher.publishTodoCompleted(
+    toggled.id,
+    toggled.completed,
+    req.id
+  );
+
   return reply.code(200).send({ success: true, data: toggled });
 };
 
@@ -71,5 +101,9 @@ export const deleteTodo = async (
       error: { code: 'NOT_FOUND', message: 'Todo not found', details: [] },
     });
   }
+
+  // Publish deletion event
+  await eventPublisher.publishTodoDeleted(req.params.id, req.id);
+
   return reply.code(204).send();
 };
