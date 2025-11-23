@@ -43,7 +43,17 @@ polystack/
 ### Local Setup
 ```bash
 npm install
+
+# Start infrastructure (PostgreSQL, Kafka, Kafka UI)
 cd tools/local-dev && docker-compose up -d
+
+# Run migrations (if DB exists)
+./run-migrations.sh
+
+# Fresh start (deletes all data)
+docker-compose down -v && docker-compose up -d
+
+# Serve applications
 nx serve <project-name>
 ```
 
@@ -228,6 +238,48 @@ CMD ["node", "dist/main.js"]
 
 ---
 
+---
+
+## Event-Driven Architecture (Kafka)
+
+### Local Infrastructure
+```bash
+cd tools/local-dev && docker-compose up -d
+# PostgreSQL (5432), Kafka (9092), Kafka UI (8080)
+```
+
+### Event Schema
+```typescript
+{
+  eventId: "uuid",
+  eventType: "TODO_CREATED|TODO_UPDATED|TODO_COMPLETED|TODO_DELETED",
+  timestamp: "ISO8601",
+  userId: "string",
+  todoId: "string",
+  data: {},
+  metadata: { source, version, correlationId }
+}
+```
+
+### Kafka Topics
+- `todo-events`: Main event stream (3 partitions)
+- `todo-notifications`: Notification events (planned)
+- `todo-analytics`: Analytics events (planned)
+
+### Stack
+- **Node.js**: Express + kafkajs (producer)
+- **Java**: Spring Boot + Spring Kafka (consumers - planned)
+- **KRaft Mode**: No Zookeeper
+
+### Key Patterns
+- Event sourcing with PostgreSQL event store
+- Idempotent producers (`idempotent: true`)
+- Current state projection from events
+- Correlation IDs for distributed tracing
+
+---
+
 ## Quick Reference
 
 - **Implementation Plan**: `docs/implementation-plan.md`
+- **Kafka Plan**: `docs/kafka-todo-implementation-plan.md`

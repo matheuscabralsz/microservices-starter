@@ -6,20 +6,34 @@
 - **Focus**: Precise steps, code examples, commands
 - **Status**: Ready for execution
 
+## Important Prerequisites
+
+Before starting, ensure you understand these key points:
+
+1. **Working Directory Context**: Most docker-compose commands should be run from `tools/local-dev` directory
+2. **Database Setup**: You need a `todos` database separate from the default `polystack_dev` database
+3. **Existing Infrastructure**: Kafka and Kafka UI are already configured in docker-compose.yml - verify rather than recreate
+4. **Dependencies**: kafkajs, uuid, and their types are already in package.json - verify installation
+5. **Java Maven**: Maven wrapper files are required for Java service - create them if building manually
+
 ---
 
 ## STEP 1: Docker Compose Kafka Infrastructure
 
-### 1.1 Check Existing Docker Compose
+### 1.1 Verify Existing Docker Compose
+
+**IMPORTANT**: Kafka and Kafka UI are already configured in the existing docker-compose.yml. This step verifies the setup.
+
 ```bash
-cat tools/local-dev/docker-compose.yml
+cd tools/local-dev
+cat docker-compose.yml | grep -A 30 "kafka:"
 ```
 
-### 1.2 Add Kafka Services to Docker Compose
+### 1.2 Verify Kafka Services Configuration
 
 File: `tools/local-dev/docker-compose.yml`
 
-Add these services (append or merge with existing):
+**The following services should already exist** (verify they match):
 
 ```yaml
 services:
@@ -79,9 +93,16 @@ networks:
     driver: bridge
 ```
 
-### 1.3 Create Kafka Topic Initialization Script
+### 1.3 Verify Kafka Topic Initialization Script
 
-File: `tools/local-dev/kafka/init-topics.sh`
+**NOTE**: This script should already exist. Verify it's present and executable:
+
+```bash
+ls -la tools/local-dev/kafka/init-topics.sh
+cat tools/local-dev/kafka/init-topics.sh
+```
+
+Expected content in `tools/local-dev/kafka/init-topics.sh`:
 
 ```bash
 #!/bin/bash
@@ -109,7 +130,7 @@ kafka-topics.sh --describe \
   --topic todo-events
 ```
 
-Make executable:
+If not executable, make it so:
 ```bash
 chmod +x tools/local-dev/kafka/init-topics.sh
 ```
@@ -125,12 +146,16 @@ docker-compose logs -f kafka
 
 ### 1.5 Verify Kafka
 
-```bash
-# Check Kafka is running
-docker-compose exec kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+**NOTE**: Ensure you're in the `tools/local-dev` directory for these commands.
 
-# List topics (should be empty initially)
-docker-compose exec kafka kafka-topics.sh --list --bootstrap-server localhost:9092
+```bash
+cd tools/local-dev
+
+# Check Kafka is running
+docker-compose exec kafka /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+
+# List topics (should be empty initially or show todo-events if already created)
+docker-compose exec kafka /opt/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
 
 # Access Kafka UI
 # Browser: http://localhost:8080
@@ -139,7 +164,8 @@ docker-compose exec kafka kafka-topics.sh --list --bootstrap-server localhost:90
 ### 1.6 Create Topic Manually (if init script not working)
 
 ```bash
-docker-compose exec kafka kafka-topics.sh --create \
+cd tools/local-dev
+docker-compose exec kafka /opt/kafka/bin/kafka-topics.sh --create \
   --bootstrap-server localhost:9092 \
   --topic todo-events \
   --partitions 3 \
@@ -151,9 +177,29 @@ docker-compose exec kafka kafka-topics.sh --create \
 
 ## STEP 2: Database Schema Updates
 
+### 2.0 Database Setup Prerequisites
+
+**CRITICAL**: Verify or create the `todos` database:
+
+```bash
+cd tools/local-dev
+
+# Check existing databases
+docker-compose exec postgres psql -U postgres -c "\l"
+
+# Create todos database if it doesn't exist
+docker-compose exec postgres psql -U postgres -c "CREATE DATABASE todos;"
+
+# Verify creation
+docker-compose exec postgres psql -U postgres -d todos -c "SELECT current_database();"
+```
+
+**NOTE**: The docker-compose.yml creates `polystack_dev` by default. We need a separate `todos` database for this service.
+
 ### 2.1 Create Migration Files Directory
 
 ```bash
+# From project root
 mkdir -p apps/services/todo-nodejs-service/migrations
 ```
 
@@ -215,24 +261,29 @@ COMMENT ON COLUMN todos.version IS 'Version number for optimistic locking';
 
 ### 2.4 Run Migrations
 
+**IMPORTANT**: These commands should be run from the project root directory.
+
 Check PostgreSQL connection first:
 ```bash
-# Get database credentials from .env
-cat apps/services/todo-nodejs-service/.env | grep DB_
+# From project root
+cd /home/mack/my_workspace/microservices-starter
 
-# Test connection
+# Test connection (from tools/local-dev directory)
+cd tools/local-dev
 docker-compose exec postgres psql -U postgres -d todos -c "SELECT version();"
 ```
 
 Run migrations:
 ```bash
-cd apps/services/todo-nodejs-service
+# Return to project root
+cd /home/mack/my_workspace/microservices-starter
 
-# Migration 1
-docker-compose exec -T postgres psql -U postgres -d todos < migrations/001_create_events_table.sql
+# Migration 1 - Create events table
+cd tools/local-dev
+docker-compose exec -T postgres psql -U postgres -d todos < ../../apps/services/todo-nodejs-service/migrations/001_create_events_table.sql
 
-# Migration 2
-docker-compose exec -T postgres psql -U postgres -d todos < migrations/002_update_todos_table.sql
+# Migration 2 - Update todos table
+docker-compose exec -T postgres psql -U postgres -d todos < ../../apps/services/todo-nodejs-service/migrations/002_update_todos_table.sql
 
 # Verify tables
 docker-compose exec postgres psql -U postgres -d todos -c "\dt"
@@ -240,16 +291,41 @@ docker-compose exec postgres psql -U postgres -d todos -c "\d events"
 docker-compose exec postgres psql -U postgres -d todos -c "\d todos"
 ```
 
+**Alternative approach** (run migrations from app directory):
+```bash
+# From project root
+cd apps/services/todo-nodejs-service
+
+# Migration 1
+docker exec -i polystack-postgres psql -U postgres -d todos < migrations/001_create_events_table.sql
+
+# Migration 2
+docker exec -i polystack-postgres psql -U postgres -d todos < migrations/002_update_todos_table.sql
+```
+
 ---
 
 ## STEP 3: Node.js Kafka Producer Integration
 
-### 3.1 Install KafkaJS
+### 3.1 Verify Dependencies
+
+**NOTE**: The required dependencies should already be installed. Verify:
 
 ```bash
 cd apps/services/todo-nodejs-service
-npm install kafkajs
-npm install --save-dev @types/kafkajs
+
+# Check package.json for required dependencies
+cat package.json | grep -E "kafkajs|uuid"
+
+# Expected dependencies:
+# "kafkajs": "^2.2.4"
+# "uuid": "^9.0.1"
+# "@types/kafkajs": "^1.8.2" (devDependencies)
+# "@types/uuid": "^9.0.7" (devDependencies)
+
+# If missing, install them:
+# npm install kafkajs uuid
+# npm install --save-dev @types/kafkajs @types/uuid
 ```
 
 ### 3.2 Create Event Types
@@ -716,8 +792,9 @@ curl -X POST http://localhost:3105/todos \
   -H "Content-Type: application/json" \
   -d '{"title": "Test Kafka Event", "description": "Testing event publishing"}'
 
-# Check Kafka messages
-docker-compose exec kafka kafka-console-consumer.sh \
+# Check Kafka messages (from tools/local-dev directory)
+cd tools/local-dev
+docker-compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server localhost:9092 \
   --topic todo-events \
   --from-beginning \
@@ -740,26 +817,34 @@ cd apps/services/todo-event-processor-java
 
 ### 4.2 Initialize Spring Boot Project
 
-Use Spring Initializr or create manually:
+**RECOMMENDED APPROACH**: Create files manually following steps 4.3-4.13 below.
+
+**ALTERNATIVE**: Use Spring Initializr (requires additional setup):
 
 ```bash
-# Using Maven wrapper
-curl https://start.spring.io/starter.zip \
-  -d dependencies=web,kafka,data-jpa,postgresql,actuator \
-  -d bootVersion=3.2.0 \
-  -d javaVersion=17 \
-  -d groupId=com.polystack \
-  -d artifactId=todo-event-processor \
-  -d name=TodoEventProcessor \
-  -d packageName=com.polystack.todoprocessor \
-  -d packaging=jar \
-  -o todo-event-processor.zip
+# Navigate to: https://start.spring.io/
+# Configure:
+# - Project: Maven
+# - Language: Java
+# - Spring Boot: 3.2.0
+# - Group: com.polystack
+# - Artifact: todo-event-processor
+# - Name: TodoEventProcessor
+# - Package name: com.polystack.todoprocessor
+# - Packaging: Jar
+# - Java: 17
+# Dependencies: Spring Web, Spring Kafka, Spring Data JPA, PostgreSQL Driver, Spring Boot Actuator
+# Download and extract to apps/services/todo-event-processor-java/
 
-unzip todo-event-processor.zip
+# Or use curl:
+curl "https://start.spring.io/starter.zip?type=maven-project&language=java&bootVersion=3.2.0&groupId=com.polystack&artifactId=todo-event-processor&name=TodoEventProcessor&packageName=com.polystack.todoprocessor&packaging=jar&javaVersion=17&dependencies=web,kafka,data-jpa,postgresql,actuator" -o todo-event-processor.zip
+
+# Extract
+unzip -d apps/services/todo-event-processor-java todo-event-processor.zip
 rm todo-event-processor.zip
 ```
 
-Or create files manually...
+**NOTE**: This approach will create Maven wrapper files (mvnw, mvnw.cmd, .mvn/). If creating manually, you'll need to add them in step 4.15a.
 
 ### 4.3 Create pom.xml
 
@@ -1599,12 +1684,40 @@ File: `apps/services/todo-event-processor-java/project.json`
 }
 ```
 
-### 4.15 Build and Run Java Service
+### 4.15a Setup Maven Wrapper (if created manually)
+
+If you created files manually (not using Spring Initializr), you need to add Maven wrapper:
 
 ```bash
 cd apps/services/todo-event-processor-java
 
-# Make Maven wrapper executable
+# Install Maven wrapper (requires Maven installed)
+mvn wrapper:wrapper
+
+# Or download and install manually:
+# Download from: https://github.com/takari/maven-wrapper/releases
+# Place mvnw, mvnw.cmd in project root
+# Place .mvn/wrapper/maven-wrapper.jar and maven-wrapper.properties in .mvn/wrapper/
+
+# Make wrapper executable
+chmod +x mvnw
+```
+
+**ALTERNATIVE**: If Maven wrapper setup fails, use system Maven:
+```bash
+# Build with system Maven
+mvn clean package -DskipTests
+
+# Run with system Maven
+mvn spring-boot:run
+```
+
+### 4.15b Build and Run Java Service
+
+```bash
+cd apps/services/todo-event-processor-java
+
+# Ensure wrapper is executable
 chmod +x mvnw
 
 # Build
@@ -1615,9 +1728,6 @@ chmod +x mvnw
 
 # Or with Nx
 nx serve todo-event-processor-java
-
-# Check logs
-tail -f logs/spring.log
 
 # Check health
 curl http://localhost:8081/health
@@ -1652,13 +1762,16 @@ cd apps/services/todo-event-processor-java
 ### 5.2 Test Create Todo
 
 ```bash
-# Create todo
-curl -X POST http://localhost:3105/todos \
+# Create todo and save response
+RESPONSE=$(curl -s -X POST http://localhost:3105/todos \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Learn Kafka Event Sourcing",
     "description": "Implement Phase 1 of the todo system"
-  }' | jq
+  }')
+
+# Display response
+echo "$RESPONSE" | jq
 
 # Expected response:
 # {
@@ -1673,8 +1786,15 @@ curl -X POST http://localhost:3105/todos \
 #   }
 # }
 
-# Save the todo ID for next tests
-TODO_ID="<copy-id-from-response>"
+# Extract and save the todo ID for next tests
+export TODO_ID=$(echo "$RESPONSE" | jq -r '.data.id')
+echo "Todo ID: $TODO_ID"
+
+# Verify the variable is set
+if [ -z "$TODO_ID" ]; then
+  echo "ERROR: Failed to extract TODO_ID"
+  exit 1
+fi
 ```
 
 ### 5.3 Verify Event in Kafka
@@ -1683,8 +1803,9 @@ TODO_ID="<copy-id-from-response>"
 # Check Kafka UI: http://localhost:8080
 # Navigate to Topics → todo-events → Messages
 
-# Or use console consumer
-docker-compose exec kafka kafka-console-consumer.sh \
+# Or use console consumer (from tools/local-dev)
+cd tools/local-dev
+docker-compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server localhost:9092 \
   --topic todo-events \
   --from-beginning \
@@ -1695,7 +1816,8 @@ docker-compose exec kafka kafka-console-consumer.sh \
 ### 5.4 Verify Event in Database
 
 ```bash
-# Check events table
+# Check events table (from tools/local-dev)
+cd tools/local-dev
 docker-compose exec postgres psql -U postgres -d todos -c \
   "SELECT event_id, event_type, aggregate_id, timestamp FROM events ORDER BY timestamp DESC LIMIT 5;"
 
@@ -1706,7 +1828,13 @@ docker-compose exec postgres psql -U postgres -d todos -c \
 
 ### 5.5 Test Update Todo
 
+**NOTE**: Ensure TODO_ID is set from step 5.2 above.
+
 ```bash
+# Verify TODO_ID is set
+echo "Using TODO_ID: $TODO_ID"
+
+# Update todo
 curl -X PUT http://localhost:3105/todos/$TODO_ID \
   -H "Content-Type: application/json" \
   -d '{
@@ -1715,7 +1843,8 @@ curl -X PUT http://localhost:3105/todos/$TODO_ID \
     "completed": false
   }' | jq
 
-# Verify in database
+# Verify in database (from tools/local-dev)
+cd tools/local-dev
 docker-compose exec postgres psql -U postgres -d todos -c \
   "SELECT * FROM events WHERE event_type='TODO_UPDATED' ORDER BY timestamp DESC LIMIT 1;"
 ```
@@ -1723,9 +1852,14 @@ docker-compose exec postgres psql -U postgres -d todos -c \
 ### 5.6 Test Complete Todo
 
 ```bash
+# Verify TODO_ID is set
+echo "Using TODO_ID: $TODO_ID"
+
+# Toggle todo completion
 curl -X PATCH http://localhost:3105/todos/$TODO_ID/toggle | jq
 
-# Verify
+# Verify (from tools/local-dev)
+cd tools/local-dev
 docker-compose exec postgres psql -U postgres -d todos -c \
   "SELECT * FROM todos WHERE id='$TODO_ID';"
 ```
@@ -1733,12 +1867,18 @@ docker-compose exec postgres psql -U postgres -d todos -c \
 ### 5.7 Test Delete Todo
 
 ```bash
+# Verify TODO_ID is set
+echo "Using TODO_ID: $TODO_ID"
+
+# Delete todo
 curl -X DELETE http://localhost:3105/todos/$TODO_ID
 
-# Verify deletion
+# Verify deletion event (from tools/local-dev)
+cd tools/local-dev
 docker-compose exec postgres psql -U postgres -d todos -c \
   "SELECT * FROM events WHERE event_type='TODO_DELETED' ORDER BY timestamp DESC LIMIT 1;"
 
+# Verify todo removed from projection
 docker-compose exec postgres psql -U postgres -d todos -c \
   "SELECT * FROM todos WHERE id='$TODO_ID';"
 # Should return 0 rows
@@ -1769,26 +1909,32 @@ Create multiple todos rapidly:
 
 ```bash
 # Bash loop to create 50 todos
+echo "Creating 50 todos..."
 for i in {1..50}; do
   curl -X POST http://localhost:3105/todos \
     -H "Content-Type: application/json" \
     -d "{\"title\": \"Todo $i\", \"description\": \"Performance test todo $i\"}" \
-    -s -o /dev/null -w "%{http_code}\n"
+    -s -o /dev/null -w "Todo $i: %{http_code}\n"
   sleep 0.1
 done
 
-# Check consumer lag
-docker-compose exec kafka kafka-consumer-groups.sh \
+echo "Waiting for processing to complete..."
+sleep 5
+
+# Check consumer lag (from tools/local-dev)
+cd tools/local-dev
+docker-compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
   --bootstrap-server localhost:9092 \
   --group todo-event-processor-group \
   --describe
 
 # Verify count in database
+echo "Checking database counts..."
 docker-compose exec postgres psql -U postgres -d todos -c \
-  "SELECT COUNT(*) FROM events;"
+  "SELECT COUNT(*) as events_count FROM events;"
 
 docker-compose exec postgres psql -U postgres -d todos -c \
-  "SELECT COUNT(*) FROM todos;"
+  "SELECT COUNT(*) as todos_count FROM todos;"
 ```
 
 ### 5.10 Verify Health Endpoints
@@ -1809,60 +1955,83 @@ curl http://localhost:8081/actuator/health | jq
 
 ## STEP 6: Verification Checklist
 
-Run through this checklist:
+**IMPORTANT**: Run these commands from `tools/local-dev` directory unless otherwise specified.
 
 ```bash
+# Navigate to tools/local-dev
+cd tools/local-dev
+
 # 1. Kafka broker running
+echo "1. Checking Kafka broker status..."
 docker-compose ps kafka
 # Status should be "Up (healthy)"
 
 # 2. Kafka UI accessible
-curl -s http://localhost:8080 | grep -q "Kafka" && echo "OK" || echo "FAIL"
+echo "2. Checking Kafka UI..."
+curl -s http://localhost:8080 | grep -q "Kafka" && echo "✅ Kafka UI OK" || echo "❌ Kafka UI FAIL"
 
 # 3. Topic exists with 3 partitions
-docker-compose exec kafka kafka-topics.sh --describe --topic todo-events --bootstrap-server localhost:9092
+echo "3. Checking Kafka topic..."
+docker-compose exec kafka /opt/kafka/bin/kafka-topics.sh --describe --topic todo-events --bootstrap-server localhost:9092
 
 # 4. Node.js service running
-curl -s http://localhost:3105/health | jq -r '.status' | grep -q "healthy" && echo "OK" || echo "FAIL"
+echo "4. Checking Node.js service..."
+curl -s http://localhost:3105/health | jq -r '.status' 2>/dev/null | grep -q "healthy" && echo "✅ Node.js service OK" || echo "❌ Node.js service FAIL"
 
 # 5. Java service running
-curl -s http://localhost:8081/health | jq -r '.status' | grep -q "healthy" && echo "OK" || echo "FAIL"
+echo "5. Checking Java service..."
+curl -s http://localhost:8081/health | jq -r '.status' 2>/dev/null | grep -q "healthy" && echo "✅ Java service OK" || echo "❌ Java service FAIL"
 
 # 6. Database tables exist
+echo "6. Checking database tables..."
 docker-compose exec postgres psql -U postgres -d todos -c "\dt" | grep -E "events|todos"
 
 # 7. Consumer group active
-docker-compose exec kafka kafka-consumer-groups.sh \
+echo "7. Checking consumer group..."
+docker-compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
   --bootstrap-server localhost:9092 \
   --group todo-event-processor-group \
   --describe | grep "todo-events"
 
 # 8. Create and verify full flow
+echo "8. Testing full event flow..."
 TODO_ID=$(curl -s -X POST http://localhost:3105/todos \
   -H "Content-Type: application/json" \
   -d '{"title": "Verification Test"}' | jq -r '.data.id')
 
-sleep 2
+echo "Created todo: $TODO_ID"
+echo "Waiting for event processing..."
+sleep 3
 
 # Verify event stored
-docker-compose exec postgres psql -U postgres -d todos -c \
-  "SELECT COUNT(*) FROM events WHERE aggregate_id='$TODO_ID';" | grep -q "1" && echo "Events OK"
+EVENT_COUNT=$(docker-compose exec -T postgres psql -U postgres -d todos -t -c \
+  "SELECT COUNT(*) FROM events WHERE aggregate_id='$TODO_ID';")
+echo "Events for todo: $EVENT_COUNT"
+[[ "$EVENT_COUNT" =~ "1" ]] && echo "✅ Events OK" || echo "❌ Events FAIL"
 
 # Verify todo created
-docker-compose exec postgres psql -U postgres -d todos -c \
-  "SELECT COUNT(*) FROM todos WHERE id='$TODO_ID';" | grep -q "1" && echo "Todos OK"
+TODO_COUNT=$(docker-compose exec -T postgres psql -U postgres -d todos -t -c \
+  "SELECT COUNT(*) FROM todos WHERE id='$TODO_ID';")
+echo "Todos count: $TODO_COUNT"
+[[ "$TODO_COUNT" =~ "1" ]] && echo "✅ Todos OK" || echo "❌ Todos FAIL"
 
-# 9. Check consumer lag < 100 messages
-docker-compose exec kafka kafka-consumer-groups.sh \
+# 9. Check consumer lag
+echo "9. Checking consumer lag..."
+docker-compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
   --bootstrap-server localhost:9092 \
   --group todo-event-processor-group \
   --describe
 
 # 10. No critical errors in logs
-docker-compose logs kafka | grep -i error | grep -v "WARN" | wc -l
-# Should be 0 or very low
+echo "10. Checking for errors in logs..."
+ERROR_COUNT=$(docker-compose logs kafka 2>&1 | grep -i error | grep -v "WARN" | wc -l)
+echo "Error count: $ERROR_COUNT"
+[ "$ERROR_COUNT" -lt 5 ] && echo "✅ Error check OK" || echo "⚠️  Warning: $ERROR_COUNT errors found"
 
+echo ""
+echo "========================================="
 echo "✅ Phase 1 verification complete!"
+echo "========================================="
 ```
 
 ---
@@ -1959,37 +2128,54 @@ docker-compose stop
 
 ## TROUBLESHOOTING REFERENCE
 
+**NOTE**: All docker-compose commands should be run from `tools/local-dev` directory.
+
 ### Issue: Kafka fails to start
 
 **Solution:**
 ```bash
+cd tools/local-dev
+
 # Remove old volumes
 docker-compose down -v
-docker volume prune
+docker volume prune -f
 
 # Restart
 docker-compose up -d kafka
+
+# Check logs
+docker-compose logs -f kafka
 ```
 
 ### Issue: Node.js can't connect to Kafka
 
 **Solution:**
 ```bash
-# Check Kafka is listening
-docker-compose exec kafka kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+cd tools/local-dev
 
-# Verify .env KAFKA_BROKERS=localhost:9092
+# Check Kafka is listening
+docker-compose exec kafka /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+
+# Verify .env KAFKA_BROKERS=localhost:9092 (from project root)
+cd ../..
 cat apps/services/todo-nodejs-service/.env | grep KAFKA
 
+# Check if Kafka is healthy
+cd tools/local-dev
+docker-compose ps kafka
+
 # Restart Node.js service
+# (Ctrl+C in service terminal and restart with npm run dev)
 ```
 
 ### Issue: Java service can't deserialize events
 
 **Solution:**
 ```bash
+cd tools/local-dev
+
 # Check event format in Kafka
-docker-compose exec kafka kafka-console-consumer.sh \
+docker-compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --bootstrap-server localhost:9092 \
   --topic todo-events \
   --from-beginning \
@@ -1997,20 +2183,26 @@ docker-compose exec kafka kafka-console-consumer.sh \
 
 # Verify JSON matches TodoEventDto structure
 # Check Java logs for deserialization errors
+# Look for: com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException
 ```
 
 ### Issue: Events not consumed
 
 **Solution:**
 ```bash
+cd tools/local-dev
+
 # Check consumer group
-docker-compose exec kafka kafka-consumer-groups.sh \
+docker-compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
   --bootstrap-server localhost:9092 \
   --describe \
   --group todo-event-processor-group
 
-# Reset offset if needed
-docker-compose exec kafka kafka-consumer-groups.sh \
+# If no active consumers, restart Java service
+# If lag is increasing, check Java service logs for errors
+
+# Reset offset if needed (CAUTION: will reprocess all events)
+docker-compose exec kafka /opt/kafka/bin/kafka-consumer-groups.sh \
   --bootstrap-server localhost:9092 \
   --group todo-event-processor-group \
   --reset-offsets \
