@@ -1,9 +1,3 @@
-```prompt
-This is a learning-purpose project, the goal is to learn about event-driven microservices, and now I'm learning kafka.
-We have a very simple todo app `apps/services/todo-nodejs-service`. And I want to implement the following concepts. The kafka service should use java as the language, and spring boot as the framework.
-Please, create a high level implementation plan document for each of these phases. Keep it simple for now.
-
-
 1. Event Sourcing Pattern
 
 Store ALL todo events (created, updated, completed, deleted, assigned, prioritized)
