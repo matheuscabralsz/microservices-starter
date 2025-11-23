@@ -63,7 +63,8 @@ docker-compose down
 
 ## Status
 
-🚧 **Phase 1 In Progress** - Kafka event-driven architecture (Steps 1-2 complete)
+🚧 **Phase 1 In Progress** - Kafka event-driven architecture (Step 3 complete - start from Step 4)
+- Test everything before continue.
 
 ## License
 
