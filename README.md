@@ -27,27 +27,43 @@ polystack/
 └── docs/                     # Documentation
 ```
 
+## Quick Start
+
+```bash
+# Start all services (PostgreSQL, Kafka, Kafka UI)
+cd tools/local-dev
+docker-compose up -d
+
+# Run migrations (if database already exists)
+./run-migrations.sh
+
+# Fresh start (deletes all data)
+docker-compose down -v && docker-compose up -d
+```
+
 ## Useful Commands
 
-### Run everything
 ```bash
-cd tools/local-dev && docker-compose up -d
+# View logs
+docker-compose logs -f
+
+# Access PostgreSQL
+docker exec -it polystack-postgres psql -U postgres -d todos
+
+# Stop services
+docker-compose down
 ```
 
-### Run psql
-```bash
-cd tools/local-dev && docker exec -it polystack-postgres psql -U postgres -d todos
-```
+## Services & Ports
 
-## Ports
-- todo-nodejs-service: 3105
-
-## Databases:
-  - todo
+- **PostgreSQL**: 5432 (DB: `todos`)
+- **Kafka Broker**: 9092-9093
+- **Kafka UI**: http://localhost:8080
+- **Todo Service**: 3105 (when running)
 
 ## Status
 
-🚧 **In Development** - Setting up the Nx monorepo infrastructure
+🚧 **Phase 1 In Progress** - Kafka event-driven architecture (Steps 1-2 complete)
 
 ## License
 
