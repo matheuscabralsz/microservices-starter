@@ -30,3 +30,11 @@ Required: `GET /health`, `GET /api/docs`
 ## Code Standards
 - TypeScript strict mode
 - DRY, SOLID principles
+
+## When Creating New Services
+Always update `tools/local-dev/docker-compose.yml` to include the new service with:
+- Build context pointing to the service directory
+- Environment variables (PORT, DATABASE_URL, etc.)
+- Port mapping
+- Dependency on postgres (with health check condition)
+- Health check configuration
