@@ -38,3 +38,7 @@ Always update `tools/local-dev/docker-compose.yml` to include the new service wi
 - Port mapping
 - Dependency on postgres (with health check condition)
 - Health check configuration
+
+If the service needs its own database, create an init script in `tools/local-dev/init-scripts/`:
+- Name format: `01-init-<dbname>-db.sql`
+- Include: `CREATE DATABASE <dbname>;` and `GRANT ALL PRIVILEGES`
