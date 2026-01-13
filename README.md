@@ -27,9 +27,57 @@ polystack/
 └── docs/                     # Documentation
 ```
 
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- Docker & Docker Compose
+- Git
+
+## Running the Project
+
+### Docker Compose (Full Stack)
+
+```bash
+cd tools/local-dev
+
+# Start all services
+docker-compose up -d
+
+# Start with live logs
+docker-compose up
+
+# Rebuild after code changes
+docker-compose up --build
+
+# View logs
+docker-compose logs -f              # All services
+docker-compose logs -f todo-service # Todo service only
+docker-compose logs -f postgres     # Database only
+
+# Check service status
+docker-compose ps
+
+# Stop services
+docker-compose down
+
+# Stop and remove volumes (full cleanup)
+docker-compose down -v
+```
+
+## Available Services
+
+| Service | Port | URLs |
+|---------|------|------|
+| NestJS Monolith | 3000 | http://localhost:3000/health |
+| Todo Service | 3105 | http://localhost:3105/health |
+| Todo Swagger | 3105 | http://localhost:3105/api/docs |
+| PostgreSQL | 5432 | `postgres://postgres:postgres@localhost:5432/polystack_dev` |
+
 ## Status
 
-🚧 **In Development** - Setting up the Nx monorepo infrastructure
+🚧 **In Development** - resource-nodejs-service
 
 ## License
 
