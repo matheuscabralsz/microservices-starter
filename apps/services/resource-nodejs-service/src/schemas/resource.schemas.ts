@@ -1,18 +1,18 @@
 import { Type, Static } from '@sinclair/typebox';
 
-// Todo response schema
-export const TodoSchema = Type.Object({
+// Resource response schema
+export const ResourceSchema = Type.Object({
   id: Type.String({ format: 'uuid', description: 'Unique identifier' }),
-  title: Type.String({ description: 'Todo title', minLength: 1, maxLength: 255 }),
+  title: Type.String({ description: 'Resource title', minLength: 1, maxLength: 255 }),
   description: Type.Union([Type.String({ maxLength: 2000 }), Type.Null()], {
-    description: 'Optional todo description',
+    description: 'Optional resource description',
   }),
   completed: Type.Boolean({ description: 'Completion status' }),
   createdAt: Type.String({ format: 'date-time', description: 'Creation timestamp' }),
   updatedAt: Type.String({ format: 'date-time', description: 'Last update timestamp' }),
 }, {
-  $id: 'Todo',
-  description: 'Todo item',
+  $id: 'Resource',
+  description: 'Resource item',
   examples: [{
     id: '123e4567-e89b-12d3-a456-426614174000',
     title: 'Learn Fastify',
@@ -24,15 +24,15 @@ export const TodoSchema = Type.Object({
 });
 
 // Request schemas
-export const TodoParams = Type.Object({
-  id: Type.String({ format: 'uuid', description: 'Todo ID' }),
-}, { $id: 'TodoParams' });
+export const ResourceParams = Type.Object({
+  id: Type.String({ format: 'uuid', description: 'Resource ID' }),
+}, { $id: 'ResourceParams' });
 
-export const CreateTodoBody = Type.Object({
+export const CreateResourceBody = Type.Object({
   title: Type.String({
     minLength: 1,
     maxLength: 255,
-    description: 'Todo title',
+    description: 'Resource title',
     examples: ['Learn Fastify'],
   }),
   description: Type.Optional(Type.String({
@@ -41,23 +41,23 @@ export const CreateTodoBody = Type.Object({
     examples: ['Study Fastify documentation and build a REST API'],
   })),
 }, {
-  $id: 'CreateTodoBody',
-  description: 'Request body for creating a todo',
+  $id: 'CreateResourceBody',
+  description: 'Request body for creating a resource',
 });
 
-export const UpdateTodoBody = Type.Object({
+export const UpdateResourceBody = Type.Object({
   title: Type.String({
     minLength: 1,
     maxLength: 255,
-    description: 'Todo title',
+    description: 'Resource title',
   }),
   description: Type.Optional(Type.Union([Type.String({ maxLength: 2000 }), Type.Null()], {
     description: 'Optional description (null to clear)',
   })),
   completed: Type.Boolean({ description: 'Completion status' }),
 }, {
-  $id: 'UpdateTodoBody',
-  description: 'Request body for updating a todo',
+  $id: 'UpdateResourceBody',
+  description: 'Request body for updating a resource',
 });
 
 // Response wrappers
@@ -81,7 +81,7 @@ export const ErrorResponse = Type.Object({
     success: false,
     error: {
       code: '404',
-      message: 'Todo not found',
+      message: 'Resource not found',
       details: [],
     },
   }],
@@ -95,10 +95,10 @@ export const HealthResponse = Type.Object({
 });
 
 // Response types
-export const TodoListResponse = SuccessResponse(Type.Array(TodoSchema));
-export const TodoItemResponse = SuccessResponse(TodoSchema);
+export const ResourceListResponse = SuccessResponse(Type.Array(ResourceSchema));
+export const ResourceItemResponse = SuccessResponse(ResourceSchema);
 
 // TypeScript types
-export type Todo = Static<typeof TodoSchema>;
-export type CreateTodoBody = Static<typeof CreateTodoBody>;
-export type UpdateTodoBody = Static<typeof UpdateTodoBody>;
+export type Resource = Static<typeof ResourceSchema>;
+export type CreateResourceBody = Static<typeof CreateResourceBody>;
+export type UpdateResourceBody = Static<typeof UpdateResourceBody>;

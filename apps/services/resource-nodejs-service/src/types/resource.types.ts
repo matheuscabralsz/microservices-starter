@@ -1,4 +1,4 @@
-export interface Todo {
+export interface Resource {
   id: string;
   title: string;
   description?: string | null;

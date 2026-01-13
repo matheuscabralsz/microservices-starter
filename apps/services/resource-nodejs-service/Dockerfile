@@ -16,9 +16,9 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/dist ./dist
 RUN npm ci --only=production
 
-EXPOSE 3105
+EXPOSE 3106
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD node -e "require('http').get('http://localhost:3105/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:3106/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 CMD ["node", "dist/server.js"]

@@ -1,5 +1,5 @@
 {
-  "name": "todo-nodejs-service",
+  "name": "resource-nodejs-service",
   "version": "0.1.0",
   "private": true,
   "type": "commonjs",

@@ -1,15 +1,15 @@
 {
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "name": "todo-nodejs-service",
+  "name": "resource-nodejs-service",
   "projectType": "application",
-  "root": "apps/services/todo-nodejs-service",
-  "sourceRoot": "apps/services/todo-nodejs-service/src",
+  "root": "apps/services/resource-nodejs-service",
+  "sourceRoot": "apps/services/resource-nodejs-service/src",
   "targets": {
     "build": {
       "executor": "nx:run-commands",
       "options": {
         "command": "npm run build",
-        "cwd": "apps/services/todo-nodejs-service"
+        "cwd": "apps/services/resource-nodejs-service"
       },
       "outputs": ["{projectRoot}/dist"]
     },
@@ -17,35 +17,35 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "npm run dev",
-        "cwd": "apps/services/todo-nodejs-service"
+        "cwd": "apps/services/resource-nodejs-service"
       }
     },
     "start": {
       "executor": "nx:run-commands",
       "options": {
         "command": "npm start",
-        "cwd": "apps/services/todo-nodejs-service"
+        "cwd": "apps/services/resource-nodejs-service"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
         "command": "npm test",
-        "cwd": "apps/services/todo-nodejs-service"
+        "cwd": "apps/services/resource-nodejs-service"
       }
     },
     "lint": {
       "executor": "nx:run-commands",
       "options": {
         "command": "npm run lint",
-        "cwd": "apps/services/todo-nodejs-service"
+        "cwd": "apps/services/resource-nodejs-service"
       }
     },
     "format": {
       "executor": "nx:run-commands",
       "options": {
         "command": "npm run format",
-        "cwd": "apps/services/todo-nodejs-service"
+        "cwd": "apps/services/resource-nodejs-service"
       }
     }
   },

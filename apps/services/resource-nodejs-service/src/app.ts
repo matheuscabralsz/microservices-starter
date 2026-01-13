@@ -3,9 +3,9 @@ import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
-import { registerTodoRoutes } from './routes/todo.routes';
+import { registerResourceRoutes } from './routes/resource.routes';
 import { pool } from './config/database';
-import { HealthResponse } from './schemas/todo.schemas';
+import { HealthResponse } from './schemas/resource.schemas';
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({ logger: true }).withTypeProvider<TypeBoxTypeProvider>();
@@ -24,9 +24,9 @@ export function buildApp(): FastifyInstance {
   app.register(swagger, {
     openapi: {
       info: {
-        title: 'Todo API',
+        title: 'Resource API',
         version: '0.1.0',
-        description: 'A RESTful API service for managing todos, built with Fastify, TypeScript, and PostgreSQL.',
+        description: 'A RESTful API service for managing resources, built with Fastify, TypeScript, and PostgreSQL.',
         contact: {
           name: 'API Support',
           url: 'https://github.com/polystack',
@@ -37,12 +37,12 @@ export function buildApp(): FastifyInstance {
       },
       servers: [
         {
-          url: 'http://localhost:3105',
+          url: 'http://localhost:3106',
           description: 'Development server',
         },
       ],
       tags: [
-        { name: 'todos', description: 'Todo management endpoints' },
+        { name: 'resources', description: 'Resource management endpoints' },
         { name: 'health', description: 'Health check endpoints' },
       ],
     },
@@ -75,7 +75,7 @@ export function buildApp(): FastifyInstance {
     }
   });
 
-  app.register(registerTodoRoutes);
+  app.register(registerResourceRoutes);
 
   return app;
 }

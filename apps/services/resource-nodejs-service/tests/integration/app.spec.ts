@@ -4,7 +4,7 @@ import { initDatabase, pool } from '../../src/config/database';
 
 const app = buildApp();
 
-describe('Todo API integration', () => {
+describe('Resource API integration', () => {
   beforeAll(async () => {
     await initDatabase();
   });
@@ -21,18 +21,18 @@ describe('Todo API integration', () => {
     expect(['healthy', 'degraded']).toContain(body.status);
   });
 
-  it('POST /api/v1/todos then GET list', async () => {
+  it('POST /api/v1/resources then GET list', async () => {
     const create = await app.inject({
       method: 'POST',
-      url: '/api/v1/todos',
-      payload: { title: 'Test Todo', description: 'Test Description' },
+      url: '/api/v1/resources',
+      payload: { title: 'Test Resource', description: 'Test Description' },
     });
     expect(create.statusCode).toBe(201);
     const created = JSON.parse(create.payload);
     expect(created.success).toBe(true);
-    expect(created.data.title).toBe('Test Todo');
+    expect(created.data.title).toBe('Test Resource');
 
-    const list = await app.inject({ method: 'GET', url: '/api/v1/todos' });
+    const list = await app.inject({ method: 'GET', url: '/api/v1/resources' });
     expect(list.statusCode).toBe(200);
     const listed = JSON.parse(list.payload);
     expect(listed.success).toBe(true);

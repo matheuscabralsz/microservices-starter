@@ -20,7 +20,7 @@ export const initDatabase = async () => {
   try {
     await client.query(`
       CREATE EXTENSION IF NOT EXISTS pgcrypto;
-      CREATE TABLE IF NOT EXISTS todos (
+      CREATE TABLE IF NOT EXISTS resources (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         title VARCHAR(255) NOT NULL,
         description TEXT,
@@ -29,7 +29,7 @@ export const initDatabase = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE INDEX IF NOT EXISTS idx_todos_completed ON todos(completed);
+      CREATE INDEX IF NOT EXISTS idx_resources_completed ON resources(completed);
     `);
     console.log('Database initialized successfully');
   } finally {
