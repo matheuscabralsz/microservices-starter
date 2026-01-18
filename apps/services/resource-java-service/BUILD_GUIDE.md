@@ -18,7 +18,7 @@ This guide will walk you through building a **Resource Management API** using Ja
 
 ## Prerequisites
 
-- **Java 17+** (LTS recommended)
+- **Java 21** (LTS)
 - **Maven 3.8+** or **Gradle 8+**
 - **PostgreSQL** (or use the Docker Compose setup)
 - **IDE**: IntelliJ IDEA, VS Code with Java extensions, or Eclipse
@@ -33,11 +33,11 @@ This guide will walk you through building a **Resource Management API** using Ja
 2. Configure:
    - **Project**: Maven
    - **Language**: Java
-   - **Spring Boot**: 3.2.x (latest stable)
+   - **Spring Boot**: 4.0.1
    - **Group**: `com.polystack`
    - **Artifact**: `resource-java-service`
    - **Packaging**: Jar
-   - **Java**: 17
+   - **Java**: 21
 
 3. Add these dependencies:
    - **Spring Web** - For building REST APIs
@@ -64,7 +64,7 @@ Create `pom.xml` in `apps/services/resource-java-service/`:
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
+        <version>4.0.1</version>
         <relativePath/>
     </parent>
 
@@ -75,7 +75,7 @@ Create `pom.xml` in `apps/services/resource-java-service/`:
     <description>Resource Management API - Java/Spring Boot</description>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
     </properties>
 
     <dependencies>
@@ -1035,7 +1035,7 @@ public class OpenApiConfig {
 # Multi-stage build for smaller final image
 
 # Stage 1: Build
-FROM maven:3.9-eclipse-temurin-17 AS build
+FROM maven:3.9-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
@@ -1048,7 +1048,7 @@ COPY src ./src
 RUN mvn package -DskipTests -B
 
 # Stage 2: Runtime
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
