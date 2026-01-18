@@ -55,3 +55,14 @@ junit.xml
 # Misc
 .cache
 *.tsbuildinfo
+
+# Java / Maven
+target/
+*.jar
+!.mvn/wrapper/*.jar
+
+# Downloaded archives
+*.zip
+
+# Temporary/demo folders
+apps/services/demo/
